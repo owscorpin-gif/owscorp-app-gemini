@@ -3,7 +3,7 @@ import HomePage from './pages/HomePage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ChatbotWidget from './components/ChatbotWidget';
-import type { CartItem, Service } from './types';
+import type { CartItem, Service, ToastState, ToastType } from './types';
 import DeveloperProfilePage from './pages/DeveloperProfilePage';
 import Toast from './components/Toast';
 import AuthPage from './pages/AuthPage';
@@ -14,13 +14,19 @@ import CartPage from './pages/CartPage';
 import CategoryPage from './pages/CategoryPage';
 import BottomNavBar from './components/BottomNavBar';
 import CategoriesListPage from './pages/CategoriesListPage';
+import ContactPage from './pages/ContactPage';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const App: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [currentView, setCurrentView] = useState<{ page: string; params: any }>({ page: 'home', params: {} });
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<ToastState | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const showToast = useCallback((message: string, type: ToastType = 'success') => {
+    setToast({ message, type });
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -28,30 +34,38 @@ const App: React.FC = () => {
 
     const setupAuth = async () => {
       try {
-        // First, get the initial session. This is an async call that might fail.
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error getting initial session:", error);
+          showToast(`Session Error: ${error.message}`, 'error');
+          setSession(null);
+        } else {
+          // Safely access session to prevent crash on unexpected response
+          setSession(data?.session || null);
+        }
 
-        // Then, set up the listener for auth state changes (login, logout, etc.)
-        const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        const authResponse = supabase.auth.onAuthStateChange((_event, session) => {
           setSession(session);
         });
-        authSubscription = data.subscription;
+        // Safely access subscription to prevent crash
+        authSubscription = authResponse?.data?.subscription ?? null;
+
       } catch (error) {
-        console.error("Error during authentication setup:", error);
+        console.error("Critical error during authentication setup:", error);
+        showToast('Could not connect to authentication service.', 'error');
+        setSession(null);
       } finally {
-        // No matter what happens, we are done with the initial auth check.
         setLoading(false);
       }
     };
 
     setupAuth();
 
-    // The cleanup function runs when the component unmounts.
     return () => {
       authSubscription?.unsubscribe();
     };
-  }, []);
+  }, [showToast]);
   
   const handleNavigate = useCallback((page: string, params = {}) => {
     setCurrentView({ page, params });
@@ -76,18 +90,18 @@ const App: React.FC = () => {
       }
       return [...prevItems, { ...service, quantity: 1 }];
     });
-    setToastMessage(`'${service.title}' added to cart!`);
-  }, []);
+    showToast(`'${service.title}' added to cart!`, 'success');
+  }, [showToast]);
   
   const handleRemoveFromCart = useCallback((itemId: string) => {
     setCartItems(prevItems => {
       const itemToRemove = prevItems.find(item => item.id === itemId);
       if (itemToRemove) {
-        setToastMessage(`'${itemToRemove.title}' removed from cart.`);
+        showToast(`'${itemToRemove.title}' removed from cart.`, 'success');
       }
       return prevItems.filter(item => item.id !== itemId);
     });
-  }, []);
+  }, [showToast]);
 
   const handleUpdateQuantity = useCallback((itemId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
@@ -120,9 +134,10 @@ const App: React.FC = () => {
                   onNavigate={handleNavigate} 
                   onAddToCart={handleAddToCart}
                   session={session}
+                  showToast={showToast}
                 />;
       case 'auth':
-        return <AuthPage onNavigate={handleNavigate} initialForm={currentView.params.initialForm} />;
+        return <AuthPage onNavigate={handleNavigate} initialForm={currentView.params.initialForm} showToast={showToast} />;
       case 'search':
         return <SearchResultsPage query={currentView.params.query} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
       case 'cart':
@@ -140,6 +155,14 @@ const App: React.FC = () => {
                 />;
        case 'categories-list':
         return <CategoriesListPage onNavigate={handleNavigate} />;
+      case 'contact':
+        return <ContactPage
+                  developerId={currentView.params.developerId}
+                  developerName={currentView.params.developerName}
+                  onNavigate={handleNavigate}
+                  session={session}
+                  showToast={showToast}
+                />;
       case 'home':
       default:
         return <HomePage onAddToCart={handleAddToCart} onNavigate={handleNavigate} />;
@@ -152,12 +175,14 @@ const App: React.FC = () => {
     <div className="flex flex-col min-h-screen bg-secondary">
       {showHeaderFooter && <Header cartItemCount={cartItemCount} onNavigate={handleNavigate} session={session} />}
       <main className="flex-grow pb-16 md:pb-0">
-        {renderPage()}
+        <ErrorBoundary>
+          {renderPage()}
+        </ErrorBoundary>
       </main>
       {showHeaderFooter && <Footer />}
       {showHeaderFooter && <ChatbotWidget />}
       {showHeaderFooter && <BottomNavBar onNavigate={handleNavigate} session={session} currentPage={currentView.page} />}
-      {toastMessage && <Toast message={toastMessage} onClose={() => setToastMessage(null)} />}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
 };

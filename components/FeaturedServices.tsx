@@ -31,7 +31,12 @@ const FeaturedServices: React.FC<FeaturedServicesProps> = ({ onAddToCart, onNavi
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {featuredServices.map(service => (
-                  <ServiceCard key={service.id} service={service} onOpenModal={handleOpenModal} />
+                  <ServiceCard 
+                    key={service.id} 
+                    service={service} 
+                    onOpenModal={handleOpenModal}
+                    onAddToCart={onAddToCart}
+                  />
               ))}
           </div>
         </div>

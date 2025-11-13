@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export interface Filters {
   price_min: string;
@@ -21,6 +21,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, categorie
     categories: [],
     rating: 0,
   });
+  const isMounted = useRef(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -52,11 +53,15 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({ onFilterChange, categorie
     setIsOpen(false);
   }
 
-  // Apply filters immediately on desktop as user interacts with them
+  // Apply filters immediately on desktop as user interacts with them, but skip the initial mount.
   useEffect(() => {
-    const isDesktop = window.innerWidth >= 1024;
-    if (isDesktop) {
-        onFilterChange(localFilters);
+    if (isMounted.current) {
+        const isDesktop = window.innerWidth >= 1024;
+        if (isDesktop) {
+            onFilterChange(localFilters);
+        }
+    } else {
+        isMounted.current = true;
     }
   }, [localFilters, onFilterChange]);
 

@@ -38,3 +38,10 @@ export interface Review {
   comment: string;
   date: string;
 }
+
+export type ToastType = 'success' | 'error';
+
+export interface ToastState {
+  message: string;
+  type: ToastType;
+}

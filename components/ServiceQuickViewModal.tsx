@@ -37,12 +37,12 @@ const ServiceQuickViewModal: React.FC<ServiceQuickViewModalProps> = ({ service, 
     }, 500);
   };
 
-  const handleDeveloperClick = (e: React.MouseEvent) => {
+  const handleNavigateToDeveloper = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onClose();
     onNavigate('developer', { developerId: service.developerId, developerName: service.developer });
-  }
+  };
   
   useEffect(() => {
     if (isAdded) {
@@ -73,7 +73,7 @@ const ServiceQuickViewModal: React.FC<ServiceQuickViewModalProps> = ({ service, 
                 <span className="inline-block bg-accent text-white px-3 py-1 rounded-full text-xs font-bold uppercase">{service.category}</span>
                 <h2 className="text-3xl font-bold font-heading text-gray-900 mt-4">{service.title}</h2>
                 <p className="text-md text-gray-500 mt-2">
-                    by <a href="#" onClick={handleDeveloperClick} className="text-primary hover:underline inline-flex items-center">
+                    by <a href="#" onClick={handleNavigateToDeveloper} className="text-primary hover:underline inline-flex items-center">
                         {service.developer}
                         {service.developerVerified && (
                             <span title="Verified Developer">
@@ -100,7 +100,7 @@ const ServiceQuickViewModal: React.FC<ServiceQuickViewModalProps> = ({ service, 
 
             <div className="mt-8 pt-6 border-t border-gray-200">
                  <div className="flex justify-between items-center">
-                    <p className="text-3xl font-extrabold text-primary">${service.price}</p>
+                    <p className="text-3xl font-extrabold text-primary">${service.price.toFixed(2)}</p>
                      <button 
                         onClick={handleAddToCartClick}
                         disabled={isAdding || isAdded}
@@ -116,7 +116,7 @@ const ServiceQuickViewModal: React.FC<ServiceQuickViewModalProps> = ({ service, 
                         {isAdding ? 'Adding...' : isAdded ? 'Added!' : 'Add to Cart'}
                     </button>
                 </div>
-                <a href="#" className="block text-center mt-4 text-sm text-primary hover:underline">View Full Details &rarr;</a>
+                <a href="#" onClick={handleNavigateToDeveloper} className="block text-center mt-4 text-sm text-primary hover:underline">View Full Details &rarr;</a>
             </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import type { Service } from '../types';
 import { services } from '../data/services';
 import ServiceCard from '../components/ServiceCard';
@@ -56,9 +56,9 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
     setSelectedService(null);
   };
   
-  const handleFilterChange = (newFilters: Filters) => {
+  const handleFilterChange = useCallback((newFilters: Filters) => {
     setFilters(newFilters);
-  };
+  }, []);
 
 
   return (
@@ -87,7 +87,12 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
               {filteredServices.length > 0 ? (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8">
                   {filteredServices.map(service => (
-                    <ServiceCard key={service.id} service={service} onOpenModal={handleOpenModal} />
+                    <ServiceCard 
+                      key={service.id} 
+                      service={service} 
+                      onOpenModal={handleOpenModal}
+                      onAddToCart={onAddToCart}
+                    />
                   ))}
                 </div>
               ) : (

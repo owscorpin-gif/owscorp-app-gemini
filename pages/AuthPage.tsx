@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import type { Provider } from '@supabase/supabase-js';
+import type { ToastType } from '../types';
 
 interface AuthPageProps {
   onNavigate: (page: string, params?: any) => void;
   initialForm?: 'login' | 'signup';
+  showToast: (message: string, type: ToastType) => void;
 }
 
 const SpinnerIcon: React.FC = () => (
@@ -15,7 +17,7 @@ const SpinnerIcon: React.FC = () => (
 );
 
 
-const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login' }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', showToast }) => {
   const [formType, setFormType] = useState<'login' | 'signup' | 'reset'>(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<'customer' | 'developer'>('customer');
@@ -25,23 +27,14 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login' }
   const [password, setPassword] = useState('');
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
-  const clearMessages = () => {
-    setError(null);
-    setMessage(null);
-  };
-  
   const handleToggleFormType = (type: 'login' | 'signup') => {
-    clearMessages();
     setFormType(type);
   };
 
   const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    clearMessages();
     
     if (formType === 'signup') {
       const { error } = await supabase.auth.signUp({
@@ -54,31 +47,30 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login' }
           },
         },
       });
-      if (error) setError(error.message);
-      else setMessage('Registration successful! Please check your email to confirm your account.');
+      if (error) showToast(error.message, 'error');
+      else showToast('Registration successful! Please check your email to confirm your account.', 'success');
     } else if (formType === 'login') {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) setError(error.message);
+      if (error) showToast(error.message, 'error');
       else onNavigate('home');
     } else if (formType === 'reset') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: window.location.origin,
         });
-        if (error) setError(error.message);
-        else setMessage('Password reset link has been sent to your email.');
+        if (error) showToast(error.message, 'error');
+        else showToast('Password reset link has been sent to your email.', 'success');
     }
     setLoading(false);
   };
 
   const handleOAuthLogin = async (provider: Provider) => {
     setLoading(true);
-    clearMessages();
     const { error } = await supabase.auth.signInWithOAuth({ provider });
     if (error) {
-      setError(error.message);
+      showToast(error.message, 'error');
       setLoading(false);
     }
   };
@@ -114,9 +106,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login' }
              <h1 className="text-2xl font-bold font-heading text-primary cursor-pointer" onClick={() => onNavigate('home')}>OWSCORP</h1>
           </div>
           
-          {error && <p className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">{error}</p>}
-          {message && <p className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-4" role="alert">{message}</p>}
-
           {formType === 'reset' ? (
              <div>
                 <h2 className="text-3xl font-bold font-heading text-gray-900 mb-2">Reset Password</h2>
@@ -130,7 +119,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login' }
                         {loading && <SpinnerIcon />}
                         {loading ? 'Sending...' : 'Send Reset Link'}
                     </button>
-                    <button type="button" onClick={() => { clearMessages(); setFormType('login'); }} className="w-full mt-4 text-center text-sm font-medium text-primary hover:underline">
+                    <button type="button" onClick={() => setFormType('login')} className="w-full mt-4 text-center text-sm font-medium text-primary hover:underline">
                         Back to Sign In
                     </button>
                 </form>
@@ -169,7 +158,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login' }
                 <div className="mb-4">
                     <div className="flex justify-between items-center">
                         <label className="block text-sm font-bold text-gray-700 mb-2" htmlFor="password">Password</label>
-                        {formType === 'login' && <button type="button" onClick={() => { clearMessages(); setFormType('reset'); }} className="text-sm font-medium text-primary hover:underline">Forgot?</button>}
+                        {formType === 'login' && <button type="button" onClick={() => setFormType('reset')} className="text-sm font-medium text-primary hover:underline">Forgot?</button>}
                     </div>
                     <div className="relative">
                         <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary" id="password" type={showPassword ? 'text' : 'password'} placeholder="••••••••" required />
