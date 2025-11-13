@@ -1,0 +1,32 @@
+{
+  "name": "owscorp",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react-dom": "^18.2.0",
+    "react": "^18.2.0",
+    "@supabase/supabase-js": "2.44.4",
+    "@supabase/auth-js": "2.49.0",
+    "@supabase/functions-js": "2.4.1",
+    "@supabase/realtime-js": "2.11.0",
+    "@supabase/postgrest-js": "1.15.5",
+    "@supabase/storage-js": "2.5.5",
+    "@supabase/gotrue-js": "2.18.0",
+    "phoenix-channels": "1.0.1",
+    "cross-fetch": "4.0.0",
+    "isomorphic-form-data": "2.0.0",
+    "as-promise": "2.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
