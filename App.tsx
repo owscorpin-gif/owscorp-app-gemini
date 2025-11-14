@@ -35,43 +35,12 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    let authSubscription: Subscription | null = null;
-
-    const setupAuth = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error getting initial session:", error);
-          showToast(`Session Error: ${error.message}`, 'error');
-          setSession(null);
-        } else {
-          // Safely access session to prevent crash on unexpected response
-          setSession(data?.session || null);
-        }
-
-        const authResponse = supabase.auth.onAuthStateChange((_event, session) => {
-          setSession(session);
-        });
-        // Safely access subscription to prevent crash
-        authSubscription = authResponse?.data?.subscription ?? null;
-
-      } catch (error) {
-        console.error("Critical error during authentication setup:", error);
-        showToast('Could not connect to authentication service.', 'error');
-        setSession(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    setupAuth();
-
-    return () => {
-      authSubscription?.unsubscribe();
-    };
-  }, [showToast]);
+    // NOTE: Supabase initialization is disabled for this sandboxed environment
+    // to prevent "Failed to fetch" errors due to placeholder credentials.
+    // The application will run in a logged-out state.
+    const timer = setTimeout(() => setLoading(false), 500); // Simulate loading
+    return () => clearTimeout(timer);
+  }, []);
   
   const handleNavigate = useCallback((page: string, params = {}) => {
     setCurrentView({ page, params });

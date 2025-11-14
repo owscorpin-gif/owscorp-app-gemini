@@ -90,7 +90,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNaviga
             <NavButton onClick={() => handleNavigation('about')}>About Us</NavButton>
             {session && <NavButton onClick={handleSettingsNav}>Settings</NavButton>}
             <NavButton onClick={() => handleNavigation('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })}>Contact</NavButton>
-            <NavButton onClick={() => {}} disabled={true}>Support Center</NavButton>
+            <NavButton onClick={() => handleNavigation('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })}>Support Center</NavButton>
             
             <button onClick={() => handleNavigation('cart')} className="relative flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 w-full text-left rounded-md">
               <span>Shopping Cart</span>

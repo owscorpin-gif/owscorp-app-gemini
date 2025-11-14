@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
@@ -14,11 +15,12 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session }) =
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isDeveloper = session?.user?.user_metadata?.user_type === 'developer';
 
-  const navLinks = [
+  // Fix: Explicitly type navLinks to allow for optional 'disabled' and 'page' properties.
+  const navLinks: { name: string; page?: string; params?: any; disabled?: boolean }[] = [
     { name: 'Services', page: 'categories-list' },
     { name: 'Developers', page: 'developer', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
     { name: 'About', page: 'about' },
-    { name: 'Support', disabled: true },
+    { name: 'Support', page: 'contact', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
     { name: 'Contact', page: 'contact', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
   ];
 

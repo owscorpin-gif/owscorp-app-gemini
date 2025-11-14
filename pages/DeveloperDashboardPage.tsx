@@ -2,11 +2,16 @@ import React from 'react';
 import type { Session } from '@supabase/supabase-js';
 import type { ToastType } from '../types';
 import { services } from '../data/services';
+import RevenueChart from '../components/RevenueChart';
+import { salesData } from '../data/salesData';
+import CategoryRevenueChart from '../components/CategoryRevenueChart';
+import { categorySalesData } from '../data/categorySalesData';
 
 // --- SVG Icons ---
 const DollarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 6v1m6-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 const CartIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>;
 const StarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>;
+const SalesIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
 const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fillRule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clipRule="evenodd" /></svg>;
 const DeleteIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>;
 
@@ -34,6 +39,8 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
   // Assuming the developer is 'AI Genix' for this demo
   const developerId = 'ai-genix';
   const developerServices = services.filter(s => s.developerId === developerId);
+  const developerSalesData = salesData.filter(d => d.developerId === developerId);
+  const developerCategorySales = categorySalesData.filter(d => d.developerId === developerId);
 
   const handleDeleteService = (serviceTitle: string) => {
     if (confirm(`Are you sure you want to delete "${serviceTitle}"? This action cannot be undone.`)) {
@@ -64,10 +71,23 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
         </div>
 
         {/* Analytics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <AnalyticsCard title="Total Revenue" value="$12,480" icon={<DollarIcon />} color="from-blue-500 to-blue-700" />
           <AnalyticsCard title="Services Sold" value="82" icon={<CartIcon />} color="from-emerald-500 to-emerald-700" />
+          <AnalyticsCard title="Total Sales" value="125" icon={<SalesIcon />} color="from-indigo-500 to-indigo-700" />
           <AnalyticsCard title="Average Rating" value="4.9" icon={<StarIcon />} color="from-amber-500 to-amber-700" />
+        </div>
+
+        {/* Revenue Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+                <h2 className="text-xl font-bold text-gray-800 mb-6">Revenue Overview</h2>
+                <RevenueChart data={developerSalesData} />
+            </div>
+            <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+                <h2 className="text-xl font-bold text-gray-800 mb-6">Revenue by Category</h2>
+                <CategoryRevenueChart data={developerCategorySales} />
+            </div>
         </div>
 
         {/* Service Management Section */}

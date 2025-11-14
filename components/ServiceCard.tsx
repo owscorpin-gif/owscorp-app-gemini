@@ -22,7 +22,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onOpenModal, onAddTo
         }
     };
 
-    const handleTitleClick = (e: React.MouseEvent) => {
+    const handleNavigateToDeveloper = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (onNavigate) {
             onNavigate('developer', { developerId: service.developerId, developerName: service.developer });
@@ -37,13 +37,19 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onOpenModal, onAddTo
             </div>
             <div className="p-6 flex flex-col flex-grow">
                 <h3
-                    onClick={onNavigate ? handleTitleClick : undefined}
-                    className={`text-xl font-bold font-heading text-gray-900 mb-2 group-hover:text-primary transition-colors ${onNavigate ? 'cursor-pointer' : ''}`}
+                    className="text-xl font-bold font-heading text-gray-900 mb-2 group-hover:text-primary transition-colors"
                 >
                     {service.title}
                 </h3>
                 <p className="text-sm text-gray-500 mb-4 flex items-center">
-                  by {service.developer}
+                  by&nbsp;
+                  <button
+                    onClick={onNavigate ? handleNavigateToDeveloper : undefined}
+                    disabled={!onNavigate}
+                    className="font-medium text-primary hover:underline focus:outline-none disabled:no-underline disabled:text-gray-500 disabled:cursor-default"
+                  >
+                    {service.developer}
+                  </button>
                   {service.developerVerified && (
                     <span title="Verified Developer">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 text-primary" viewBox="0 0 20 20" fill="currentColor">
