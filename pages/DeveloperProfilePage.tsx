@@ -32,6 +32,8 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState('');
   const [reviewError, setReviewError] = useState('');
+  const [canReview, setCanReview] = useState(false);
+  const [reviewStatusMessage, setReviewStatusMessage] = useState('');
 
   const defaultBio = useMemo(() => `This is a placeholder for the developer's biography. Here, ${developerName} would describe their expertise, experience, and the types of solutions they specialize in. They might also include links to their portfolio or personal website.`, [developerName]);
 
@@ -64,6 +66,38 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
   useEffect(() => {
     const fetchData = async () => {
         setIsLoading(true);
+        
+        const checkReviewEligibility = async () => {
+            if (!session?.user?.id) {
+                setCanReview(false);
+                return;
+            }
+
+            // 1. Check if user already reviewed this developer
+            const { data: existingReview, error: reviewError } = await supabase
+                .from('reviews').select('id').eq('developer_id', developerId).eq('user_id', session.user.id).maybeSingle();
+            
+            if (reviewError) console.error("Error checking existing review:", reviewError);
+            if (existingReview) {
+                setCanReview(false);
+                setReviewStatusMessage("You've already reviewed this developer.");
+                return;
+            }
+
+            // 2. Check if user has purchased any service from this developer
+            const { data: purchase, error: purchaseError } = await supabase
+                .from('orders').select('services(developer_id)').eq('user_id', session.user.id).eq('services.developer_id', developerId).limit(1).maybeSingle();
+
+            if (purchaseError) console.error("Error checking purchase history:", purchaseError);
+            
+            if (purchase) {
+                 setCanReview(true);
+            } else {
+                 setCanReview(false);
+                 setReviewStatusMessage("You must purchase a service from this developer to leave a review.");
+            }
+        };
+
         // Fetch profile, services, and reviews concurrently
         const [profileResult, servicesResult] = await Promise.all([
              supabase.from('profiles').select('description').eq('id', developerId).single(),
@@ -88,10 +122,11 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
         }
 
         await fetchReviews();
+        await checkReviewEligibility();
         setIsLoading(false);
     };
     fetchData();
-  }, [developerId, showToast, defaultBio, fetchReviews]);
+  }, [developerId, showToast, defaultBio, fetchReviews, session]);
   
   const totalPages = Math.ceil(developerServices.length / SERVICES_PER_PAGE);
   const paginatedServices = developerServices.slice(
@@ -126,6 +161,10 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
   
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canReview) {
+        showToast("You are not eligible to leave a review.", "error");
+        return;
+    }
     if (userRating === 0) {
       setReviewError('Please select a rating.');
       return;
@@ -151,6 +190,8 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
         setUserRating(0);
         setUserComment('');
         setReviewError('');
+        setCanReview(false); // User has now submitted their review
+        setReviewStatusMessage("You've already reviewed this developer.");
     }
   };
 
@@ -256,23 +297,27 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
               <h2 className="text-2xl font-bold font-heading text-gray-800 mb-6 border-b border-gray-300 pb-4">Customer Reviews</h2>
               
               {session ? (
-                  <form onSubmit={handleReviewSubmit} className="bg-secondary p-6 rounded-lg mb-8">
-                      <h3 className="text-lg font-bold text-gray-800 mb-2">Leave a Review</h3>
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Your Rating</label>
-                        <StarRatingInput rating={userRating} setRating={setUserRating} />
-                      </div>
-                      <div className="mb-4">
-                        <label htmlFor="review-comment" className="block text-sm font-medium text-gray-700 mb-1">Your Comment</label>
-                        <textarea id="review-comment" value={userComment} onChange={e => setUserComment(e.target.value)} rows={4} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary" placeholder="Share your experience..."></textarea>
-                      </div>
-                      {reviewError && <p className="text-red-500 text-sm mb-4">{reviewError}</p>}
-                      <button type="submit" className="bg-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-900">Submit Review</button>
-                  </form>
+                  canReview ? (
+                      <form onSubmit={handleReviewSubmit} className="bg-secondary p-6 rounded-lg mb-8">
+                          <h3 className="text-lg font-bold text-gray-800 mb-2">Leave a Review</h3>
+                          <div className="mb-4">
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Your Rating</label>
+                              <StarRatingInput rating={userRating} setRating={setUserRating} />
+                          </div>
+                          <div className="mb-4">
+                              <label htmlFor="review-comment" className="block text-sm font-medium text-gray-700 mb-1">Your Comment</label>
+                              <textarea id="review-comment" value={userComment} onChange={e => setUserComment(e.target.value)} rows={4} className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary focus:border-primary" placeholder="Share your experience..."></textarea>
+                          </div>
+                          {reviewError && <p className="text-red-500 text-sm mb-4">{reviewError}</p>}
+                          <button type="submit" className="bg-primary text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-900">Submit Review</button>
+                      </form>
+                  ) : (
+                      <p className="bg-blue-50 text-blue-800 p-4 rounded-lg mb-8 text-center">{reviewStatusMessage}</p>
+                  )
               ) : (
-                 <p className="bg-blue-50 text-blue-800 p-4 rounded-lg mb-8 text-center">
-                    You must be <button onClick={() => onNavigate('auth')} className="font-bold underline">logged in</button> to leave a review.
-                 </p>
+                  <p className="bg-blue-50 text-blue-800 p-4 rounded-lg mb-8 text-center">
+                      You must be <button onClick={() => onNavigate('auth')} className="font-bold underline">logged in</button> to leave a review.
+                  </p>
               )}
               
               {reviews.length > 0 ? (

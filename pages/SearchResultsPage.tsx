@@ -27,10 +27,13 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
   useEffect(() => {
     const fetchServices = async () => {
       setLoading(true);
+      // Use a more robust 'or' query with 'ilike' for case-insensitive partial matching
+      // across both title and description. This is more reliable than textSearch without specific DB config.
       const { data, error } = await supabase
         .from('services')
         .select('*')
-        .textSearch('title', `'${query}'`);
+        .or(`title.ilike.%${query}%,description.ilike.%${query}%`);
+
 
       if (error) {
         console.warn("Error searching services, falling back to mock data:", error.message);

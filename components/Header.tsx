@@ -18,7 +18,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session, onL
   // Fix: Explicitly type navLinks to allow for optional 'disabled' and 'page' properties.
   const navLinks: { name: string; page?: string; params?: any; disabled?: boolean }[] = [
     { name: 'Services', page: 'categories-list' },
-    { name: 'Developers', page: 'developer', params: { developer_id: 'ai-genix', developerName: 'AI Genix' } },
+    // The "Developers" link is disabled because it currently points to a single, hardcoded developer profile.
+    // A dedicated page for listing all developers should be implemented before enabling this link.
+    { name: 'Developers', disabled: true },
     { name: 'About', page: 'about' },
     { name: 'Support', page: 'contact' },
   ];

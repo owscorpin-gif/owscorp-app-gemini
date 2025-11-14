@@ -39,8 +39,16 @@ const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({ onNavigat
         showToast('Could not fetch purchase history.', 'error');
         console.warn('Error fetching purchased items:', error.message);
       } else {
-        const items = data.map(order => order.service).filter(Boolean) as Service[];
-        setPurchasedItems(items);
+        // Fix: Deduplicate items. If a user buys the same service twice, it should only appear once.
+        const uniqueItemsMap = new Map<string, Service>();
+        data.forEach(order => {
+          // The join might return a null service if it was deleted, so we check for that.
+          if (order.service && !uniqueItemsMap.has(order.service.id)) {
+            uniqueItemsMap.set(order.service.id, order.service as Service);
+          }
+        });
+        const uniqueItems = Array.from(uniqueItemsMap.values());
+        setPurchasedItems(uniqueItems);
       }
       setLoading(false);
     };
