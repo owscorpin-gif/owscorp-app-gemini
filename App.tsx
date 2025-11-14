@@ -7,8 +7,7 @@ import type { CartItem, Service, ToastState, ToastType } from './types';
 import DeveloperProfilePage from './pages/DeveloperProfilePage';
 import Toast from './components/Toast';
 import AuthPage from './pages/AuthPage';
-import { supabase } from './supabaseClient';
-import type { Session, Subscription } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import SearchResultsPage from './pages/SearchResultsPage';
 import CartPage from './pages/CartPage';
 import CategoryPage from './pages/CategoryPage';
@@ -35,9 +34,6 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // NOTE: Supabase initialization is disabled for this sandboxed environment
-    // to prevent "Failed to fetch" errors due to placeholder credentials.
-    // The application will run in a logged-out state.
     const timer = setTimeout(() => setLoading(false), 500); // Simulate loading
     return () => clearTimeout(timer);
   }, []);
@@ -46,11 +42,26 @@ const App: React.FC = () => {
     setCurrentView({ page, params });
     window.scrollTo(0, 0);
   }, []);
+  
+  const handleLoginSuccess = useCallback((mockSession: Session) => {
+    setSession(mockSession);
+    const isDeveloper = mockSession.user?.user_metadata?.user_type === 'developer';
+    handleNavigate(isDeveloper ? 'developer-dashboard' : 'customer-dashboard');
+    showToast('Successfully signed in!', 'success');
+  }, [handleNavigate, showToast]);
+
+  const handleLogout = useCallback(() => {
+    setSession(null);
+    handleNavigate('home');
+    showToast('You have been signed out.', 'success');
+  }, [handleNavigate, showToast]);
+
 
   // Handles navigation side-effect safely after render.
   useEffect(() => {
     if (session && currentView.page === 'auth') {
-      handleNavigate('home');
+      const isDeveloper = session.user?.user_metadata?.user_type === 'developer';
+      handleNavigate(isDeveloper ? 'developer-dashboard' : 'customer-dashboard');
     }
   }, [session, currentView.page, handleNavigate]);
 
@@ -123,7 +134,7 @@ const App: React.FC = () => {
                   showToast={showToast}
                 />;
       case 'auth':
-        return <AuthPage onNavigate={handleNavigate} initialForm={currentView.params.initialForm} showToast={showToast} />;
+        return <AuthPage onNavigate={handleNavigate} initialForm={currentView.params.initialForm} showToast={showToast} onLoginSuccess={handleLoginSuccess} />;
       case 'search':
         return <SearchResultsPage query={currentView.params.query} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
       case 'cart':
@@ -179,7 +190,7 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-secondary">
-      {showHeaderFooter && <Header cartItemCount={cartItemCount} onNavigate={handleNavigate} session={session} />}
+      {showHeaderFooter && <Header cartItemCount={cartItemCount} onNavigate={handleNavigate} session={session} onLogout={handleLogout} />}
       <main className="flex-grow pb-16 md:pb-0">
         <ErrorBoundary>
           {renderPage()}

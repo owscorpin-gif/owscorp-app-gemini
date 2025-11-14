@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '../supabaseClient';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -8,9 +7,10 @@ interface MobileSidebarProps {
   onNavigate: (page: string, params?: any) => void;
   session: Session | null;
   cartItemCount: number;
+  onLogout: () => void;
 }
 
-const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNavigate, session, cartItemCount }) => {
+const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNavigate, session, cartItemCount, onLogout }) => {
   const isDeveloper = session?.user?.user_metadata?.user_type === 'developer';
   
   const handleNavigation = (page: string, params = {}) => {
@@ -34,9 +34,9 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNaviga
     }
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    handleNavigation('home');
+  const handleLogout = () => {
+    onLogout();
+    onClose();
   };
   
   const welcomeName = session?.user?.user_metadata?.full_name?.split(' ')[0] || session?.user?.email || 'User';
@@ -89,7 +89,6 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNaviga
             <NavButton onClick={() => handleNavigation('categories-list')}>Services</NavButton>
             <NavButton onClick={() => handleNavigation('about')}>About Us</NavButton>
             {session && <NavButton onClick={handleSettingsNav}>Settings</NavButton>}
-            <NavButton onClick={() => handleNavigation('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })}>Contact</NavButton>
             <NavButton onClick={() => handleNavigation('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })}>Support Center</NavButton>
             
             <button onClick={() => handleNavigation('cart')} className="relative flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 w-full text-left rounded-md">

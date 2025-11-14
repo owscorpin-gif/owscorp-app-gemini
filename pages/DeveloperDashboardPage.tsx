@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import type { ToastType } from '../types';
+import type { ToastType, Service } from '../types';
 import { services } from '../data/services';
 import RevenueChart from '../components/RevenueChart';
 import { salesData } from '../data/salesData';
 import CategoryRevenueChart from '../components/CategoryRevenueChart';
 import { categorySalesData } from '../data/categorySalesData';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // --- SVG Icons ---
 const DollarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 6v1m6-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
@@ -36,17 +37,28 @@ const AnalyticsCard: React.FC<{ title: string, value: string, icon: React.ReactN
 );
 
 const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavigate, session, showToast }) => {
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+
   // Assuming the developer is 'AI Genix' for this demo
   const developerId = 'ai-genix';
   const developerServices = services.filter(s => s.developerId === developerId);
   const developerSalesData = salesData.filter(d => d.developerId === developerId);
   const developerCategorySales = categorySalesData.filter(d => d.developerId === developerId);
 
-  const handleDeleteService = (serviceTitle: string) => {
-    if (confirm(`Are you sure you want to delete "${serviceTitle}"? This action cannot be undone.`)) {
-      showToast(`"${serviceTitle}" has been deleted. (Demo)`, 'success');
-      // In a real app, you would call an API to delete the service here.
-    }
+  const handleOpenDeleteModal = (service: Service) => {
+    setServiceToDelete(service);
+    setIsDeleteModalOpen(true);
+  };
+  
+  const handleConfirmDelete = () => {
+    if (!serviceToDelete) return;
+
+    showToast(`"${serviceToDelete.title}" has been deleted. (Demo)`, 'success');
+    // In a real app, you would call an API to delete the service here.
+    
+    setIsDeleteModalOpen(false);
+    setServiceToDelete(null);
   };
   
   const welcomeName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Developer';
@@ -89,6 +101,17 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
                 <CategoryRevenueChart data={developerCategorySales} />
             </div>
         </div>
+        
+        {/* Sales Trend Analysis Section */}
+        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg mb-8">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Sales Trend Analysis</h2>
+            <p className="text-gray-600 leading-relaxed">
+              Based on your sales data, March was your strongest month, likely driven by the new "AI Sales Agent" launch campaign. February saw a slight dip, which is a common seasonal trend.
+              <br/><br/>
+              <strong>Recommendation:</strong> Consider running a mid-year promotion in July or August to boost sales during traditionally slower months. Replicating marketing efforts from your successful March campaign could yield significant results.
+            </p>
+        </div>
+
 
         {/* Service Management Section */}
         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
@@ -114,7 +137,7 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
                         <button onClick={() => onNavigate('service-management', { serviceId: service.id })} className="flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm p-2 rounded-md bg-blue-100/50 hover:bg-blue-100">
                           <EditIcon /> <span className="hidden sm:inline">Edit</span>
                         </button>
-                        <button onClick={() => handleDeleteService(service.title)} className="flex items-center text-red-600 hover:text-red-800 font-medium text-sm p-2 rounded-md bg-red-100/50 hover:bg-red-100">
+                        <button onClick={() => handleOpenDeleteModal(service)} className="flex items-center text-red-600 hover:text-red-800 font-medium text-sm p-2 rounded-md bg-red-100/50 hover:bg-red-100">
                            <DeleteIcon /> <span className="hidden sm:inline">Delete</span>
                         </button>
                       </div>
@@ -129,6 +152,13 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
           </div>
         </div>
       </div>
+      <ConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Service"
+        message={`Are you sure you want to delete "${serviceToDelete?.title}"? This action cannot be undone.`}
+      />
     </div>
   );
 };

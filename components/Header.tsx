@@ -2,16 +2,16 @@
 
 import React, { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from '../supabaseClient';
 import MobileSidebar from './MobileSidebar';
 
 interface HeaderProps {
   cartItemCount: number;
   onNavigate: (page: string, params?: any) => void;
   session: Session | null;
+  onLogout: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session }) => {
+const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session, onLogout }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isDeveloper = session?.user?.user_metadata?.user_type === 'developer';
 
@@ -21,12 +21,10 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session }) =
     { name: 'Developers', page: 'developer', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
     { name: 'About', page: 'about' },
     { name: 'Support', page: 'contact', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
-    { name: 'Contact', page: 'contact', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
   ];
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    onNavigate('home');
+  const handleLogout = () => {
+    onLogout();
   };
   
   const welcomeName = session?.user?.user_metadata?.full_name?.split(' ')[0] || session?.user?.email || 'User';
@@ -111,6 +109,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session }) =
         onNavigate={onNavigate}
         session={session}
         cartItemCount={cartItemCount}
+        onLogout={onLogout}
       />
     </>
   );

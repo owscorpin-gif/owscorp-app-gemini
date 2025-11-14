@@ -14,7 +14,6 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   ]
   
   const textLinkClass = "text-gray-600 hover:text-gray-800 text-left w-full";
-  const disabledTextLinkClass = "text-gray-400 cursor-not-allowed";
 
   return (
     <footer className="bg-white text-gray-600 body-font">
@@ -39,23 +38,23 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">COMPANY</h2>
             <nav className="list-none mb-10 space-y-2">
               <li><button onClick={() => onNavigate('about')} className={textLinkClass}>About Us</button></li>
-              <li><span className={disabledTextLinkClass}>Careers</span></li>
+              <li><button onClick={() => onNavigate('about')} className={textLinkClass}>Careers</button></li>
               <li><button onClick={() => onNavigate('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })} className={textLinkClass}>Contact</button></li>
-              <li><span className={disabledTextLinkClass}>Blog</span></li>
+              <li><button onClick={() => onNavigate('about')} className={textLinkClass}>Blog</button></li>
             </nav>
           </div>
           <div className="lg:w-1/4 md:w-1/2 w-full px-4">
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">LEGAL</h2>
             <nav className="list-none mb-10 space-y-2">
-              <li><span className={disabledTextLinkClass}>Terms of Service</span></li>
-              <li><span className={disabledTextLinkClass}>Privacy Policy</span></li>
+              <li><button onClick={() => onNavigate('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })} className={textLinkClass}>Terms of Service</button></li>
+              <li><button onClick={() => onNavigate('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })} className={textLinkClass}>Privacy Policy</button></li>
             </nav>
           </div>
           <div className="lg:w-1/4 md:w-1/2 w-full px-4">
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">DEVELOPERS</h2>
             <nav className="list-none mb-10 space-y-2">
               <li><button onClick={() => onNavigate('auth', { initialForm: 'signup' })} className={textLinkClass}>Sell Your Software</button></li>
-              <li><span className={disabledTextLinkClass}>Developer Docs</span></li>
+              <li><button onClick={() => onNavigate('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })} className={textLinkClass}>Developer Docs</button></li>
             </nav>
           </div>
         </div>

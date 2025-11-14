@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { supabase } from '../supabaseClient';
-import type { Provider } from '@supabase/supabase-js';
+import type { Provider, Session } from '@supabase/supabase-js';
 import type { ToastType } from '../types';
 
 interface AuthPageProps {
   onNavigate: (page: string, params?: any) => void;
   initialForm?: 'login' | 'signup';
   showToast: (message: string, type: ToastType) => void;
+  onLoginSuccess: (session: Session) => void;
 }
 
 const SpinnerIcon: React.FC = () => (
@@ -17,7 +17,7 @@ const SpinnerIcon: React.FC = () => (
 );
 
 
-const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', showToast }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', showToast, onLoginSuccess }) => {
   const [formType, setFormType] = useState<'login' | 'signup' | 'reset'>(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<'customer' | 'developer'>('customer');
@@ -32,48 +32,66 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', 
     setFormType(type);
   };
 
-  const handleAuthAction = async (e: React.FormEvent) => {
+  const handleAuthAction = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    if (formType === 'signup') {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            user_type: userType,
-          },
-        },
-      });
-      if (error) showToast(error.message, 'error');
-      else showToast('Registration successful! Please check your email to confirm your account.', 'success');
-    } else if (formType === 'login') {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) showToast(error.message, 'error');
-      else onNavigate('home');
-    } else if (formType === 'reset') {
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin,
-        });
-        if (error) showToast(error.message, 'error');
-        else showToast('Password reset link has been sent to your email.', 'success');
-    }
-    setLoading(false);
+
+    // Simulate API call for mock authentication
+    setTimeout(() => {
+        if (formType === 'reset') {
+            showToast('Password reset link sent to your email (Demo).', 'success');
+        } else {
+             // Create a realistic, but mock, session object.
+            // FIX: Added missing properties to satisfy the Session type.
+            const mockSession: Session = {
+                access_token: 'mock_access_token',
+                token_type: 'bearer',
+                expires_in: 3600,
+                expires_at: Math.floor(Date.now() / 1000) + 3600,
+                refresh_token: 'mock_refresh_token',
+                user: {
+                    id: 'mock-user-id-' + Math.random(),
+                    app_metadata: { provider: 'email' },
+                    user_metadata: {
+                        full_name: fullName,
+                        user_type: formType === 'signup' ? userType : (email.startsWith('dev') ? 'developer' : 'customer'),
+                    },
+                    aud: 'authenticated',
+                    email: email,
+                    created_at: new Date().toISOString(),
+                }
+            };
+            onLoginSuccess(mockSession);
+        }
+        setLoading(false);
+    }, 1000);
+  };
+  
+   const handleOAuthLogin = (provider: Provider) => {
+    setLoading(true);
+     setTimeout(() => {
+        showToast(`Signing in with ${provider} (Demo)...`, 'success');
+        // FIX: Added missing properties to satisfy the Session type.
+        const mockSession: Session = {
+                access_token: 'mock_oauth_token',
+                token_type: 'bearer',
+                expires_in: 3600,
+                expires_at: Math.floor(Date.now() / 1000) + 3600,
+                refresh_token: 'mock_oauth_refresh_token',
+                user: {
+                    id: 'mock-oauth-id-' + Math.random(),
+                    app_metadata: { provider: provider },
+                    user_metadata: { full_name: 'OAuth User', user_type: 'customer' },
+                    aud: 'authenticated',
+                    email: `${provider}@example.com`,
+                    created_at: new Date().toISOString(),
+                }
+            };
+        onLoginSuccess(mockSession);
+        setLoading(false);
+     }, 1000);
   };
 
-  const handleOAuthLogin = async (provider: Provider) => {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({ provider });
-    if (error) {
-      showToast(error.message, 'error');
-      setLoading(false);
-    }
-  };
 
   const SocialButton: React.FC<{ icon: React.ReactNode; label: string; onClick: () => void }> = ({ icon, label, onClick }) => (
     <button onClick={onClick} disabled={loading} className="flex items-center justify-center w-full py-3 px-4 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50">
