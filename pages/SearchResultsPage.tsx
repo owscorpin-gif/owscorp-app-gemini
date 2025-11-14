@@ -92,6 +92,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
                       service={service} 
                       onOpenModal={handleOpenModal}
                       onAddToCart={onAddToCart}
+                      onNavigate={onNavigate}
                     />
                   ))}
                 </div>

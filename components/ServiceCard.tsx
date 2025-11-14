@@ -11,13 +11,21 @@ interface ServiceCardProps {
     service: Service;
     onOpenModal?: (service: Service) => void;
     onAddToCart?: (service: Service) => void;
+    onNavigate?: (page: string, params?: any) => void;
 }
 
-const ServiceCard: React.FC<ServiceCardProps> = ({ service, onOpenModal, onAddToCart }) => {
+const ServiceCard: React.FC<ServiceCardProps> = ({ service, onOpenModal, onAddToCart, onNavigate }) => {
     const handleAddToCartClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (onAddToCart) {
             onAddToCart(service);
+        }
+    };
+
+    const handleTitleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (onNavigate) {
+            onNavigate('developer', { developerId: service.developerId, developerName: service.developer });
         }
     };
     
@@ -28,7 +36,12 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onOpenModal, onAddTo
                 <div className="absolute top-0 right-0 bg-accent text-white px-3 py-1 m-2 rounded-full text-sm font-bold">{service.category}</div>
             </div>
             <div className="p-6 flex flex-col flex-grow">
-                <h3 className="text-xl font-bold font-heading text-gray-900 mb-2 group-hover:text-primary transition-colors">{service.title}</h3>
+                <h3
+                    onClick={onNavigate ? handleTitleClick : undefined}
+                    className={`text-xl font-bold font-heading text-gray-900 mb-2 group-hover:text-primary transition-colors ${onNavigate ? 'cursor-pointer' : ''}`}
+                >
+                    {service.title}
+                </h3>
                 <p className="text-sm text-gray-500 mb-4 flex items-center">
                   by {service.developer}
                   {service.developerVerified && (

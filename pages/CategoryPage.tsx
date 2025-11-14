@@ -76,6 +76,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, o
                       service={service} 
                       onOpenModal={handleOpenModal}
                       onAddToCart={onAddToCart}
+                      onNavigate={onNavigate}
                     />
                   ))}
                 </div>

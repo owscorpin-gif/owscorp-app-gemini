@@ -291,6 +291,7 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
                         service={service} 
                         onOpenModal={handleOpenModal} 
                         onAddToCart={onAddToCart}
+                        onNavigate={onNavigate}
                       />
                     ))}
                   </div>

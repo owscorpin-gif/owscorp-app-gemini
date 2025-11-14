@@ -36,6 +36,7 @@ const FeaturedServices: React.FC<FeaturedServicesProps> = ({ onAddToCart, onNavi
                     service={service} 
                     onOpenModal={handleOpenModal}
                     onAddToCart={onAddToCart}
+                    onNavigate={onNavigate}
                   />
               ))}
           </div>
