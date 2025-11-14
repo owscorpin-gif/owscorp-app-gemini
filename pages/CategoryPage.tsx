@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import ServiceCard from '../components/ServiceCard';
 import type { Service, ToastType } from '../types';
 import ServiceQuickViewModal from '../components/ServiceQuickViewModal';
@@ -27,10 +27,24 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, o
   useEffect(() => {
     const fetchServices = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      let queryBuilder = supabase
         .from('services')
         .select('*')
         .eq('category', categoryName);
+
+      // Apply filters directly to the query for backend efficiency
+      if (filters.price_min) {
+        queryBuilder = queryBuilder.gte('price', parseFloat(filters.price_min));
+      }
+      if (filters.price_max) {
+        queryBuilder = queryBuilder.lte('price', parseFloat(filters.price_max));
+      }
+      if (filters.rating > 0) {
+        queryBuilder = queryBuilder.gte('rating', filters.rating);
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) {
         console.warn(`Error fetching services for category ${categoryName}, falling back to mock data:`, error.message);
@@ -44,24 +58,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, o
     };
 
     fetchServices();
-  }, [categoryName, showToast]);
-
-  const filteredServices = useMemo(() => {
-    return services
-      .filter(service => {
-        // Price filter
-        const minPrice = parseFloat(filters.price_min);
-        const maxPrice = parseFloat(filters.price_max);
-        if (!isNaN(minPrice) && service.price < minPrice) return false;
-        if (!isNaN(maxPrice) && service.price > maxPrice) return false;
-
-        // Rating filter
-        if (filters.rating > 0 && service.rating < filters.rating) return false;
-
-        return true;
-      });
-  }, [services, filters]);
-
+  }, [categoryName, showToast, filters]);
 
   const handleOpenModal = (service: Service) => {
     setSelectedService(service);
@@ -121,9 +118,9 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, o
                 <div className="flex justify-center items-center h-64">
                   <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
                 </div>
-              ) : filteredServices.length > 0 ? (
+              ) : services.length > 0 ? (
                 <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
-                  {filteredServices.map(service => (
+                  {services.map(service => (
                     <ServiceCard 
                       key={service.id} 
                       service={service} 

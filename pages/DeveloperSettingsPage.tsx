@@ -148,6 +148,23 @@ const DeveloperSettingsPage: React.FC<DeveloperSettingsPageProps> = ({ onNavigat
               />
             </div>
 
+            <div className="pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-bold text-gray-800 mb-2">Account Verification</h3>
+              <p className="text-gray-600 mb-4">
+                  Upload a government-issued ID to get a verified badge on your profile and services. This increases trust with buyers.
+              </p>
+              <button
+                  type="button"
+                  onClick={() => showToast('Verification document upload is coming soon!', 'success')}
+                  className="bg-primary text-white font-medium py-2 px-6 rounded-lg hover:bg-blue-900 transition-colors flex items-center justify-start"
+              >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Upload Identification Document
+              </button>
+            </div>
+
             <div className="pt-4 border-t border-gray-200">
                  <button
                     type="submit"

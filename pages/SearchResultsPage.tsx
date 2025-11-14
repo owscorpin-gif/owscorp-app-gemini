@@ -27,17 +27,32 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
   useEffect(() => {
     const fetchServices = async () => {
       setLoading(true);
-      // Use a more robust 'or' query with 'ilike' for case-insensitive partial matching
-      // across both title and description. This is more reliable than textSearch without specific DB config.
-      const { data, error } = await supabase
+      
+      let queryBuilder = supabase
         .from('services')
         .select('*')
         .or(`title.ilike.%${query}%,description.ilike.%${query}%`);
 
+      // Apply filters directly to the query for backend efficiency
+      if (filters.price_min) {
+        queryBuilder = queryBuilder.gte('price', parseFloat(filters.price_min));
+      }
+      if (filters.price_max) {
+        queryBuilder = queryBuilder.lte('price', parseFloat(filters.price_max));
+      }
+      if (filters.categories.length > 0) {
+        queryBuilder = queryBuilder.in('category', filters.categories);
+      }
+      if (filters.rating > 0) {
+        queryBuilder = queryBuilder.gte('rating', filters.rating);
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) {
         console.warn("Error searching services, falling back to mock data:", error.message);
         showToast('Could not perform live search. Showing demo content.', 'error');
+        // Client-side fallback search
         const searchResults = mockServices.filter(s => 
           s.title.toLowerCase().includes(query.toLowerCase()) || 
           s.description.toLowerCase().includes(query.toLowerCase())
@@ -55,30 +70,14 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
       setServices([]);
       setLoading(false);
     }
-  }, [query, showToast]);
+  }, [query, showToast, filters]);
 
 
-  const filteredServices = useMemo(() => {
-    return services.filter(service => {
-      // Price filter
-      const minPrice = parseFloat(filters.price_min);
-      const maxPrice = parseFloat(filters.price_max);
-      if (!isNaN(minPrice) && service.price < minPrice) return false;
-      if (!isNaN(maxPrice) && service.price > maxPrice) return false;
-
-      // Category filter
-      if (filters.categories.length > 0 && !filters.categories.includes(service.category)) {
-        return false;
-      }
-      
-      // Rating filter
-      if (filters.rating > 0 && service.rating < filters.rating) return false;
-
-      return true;
-    });
-  }, [services, filters]);
-  
-  const allCategories = useMemo(() => [...new Set(services.map(s => s.category))], [services]);
+  const allCategories = useMemo(() => {
+    // Generate categories from mock data as a fallback if the live fetch is empty but not failed
+    const sourceData = services.length > 0 ? services : mockServices;
+    return [...new Set(sourceData.map(s => s.category))];
+  }, [services]);
 
   const handleOpenModal = (service: Service) => {
     setSelectedService(service);
@@ -120,9 +119,9 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
                  <div className="flex justify-center items-center h-64">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
                  </div>
-              ) : filteredServices.length > 0 ? (
+              ) : services.length > 0 ? (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8">
-                  {filteredServices.map(service => (
+                  {services.map(service => (
                     <ServiceCard 
                       key={service.id} 
                       service={service} 

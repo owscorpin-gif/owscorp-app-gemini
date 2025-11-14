@@ -35,35 +35,37 @@ const ServiceManagementPage: React.FC<ServiceManagementPageProps> = ({ onNavigat
   useEffect(() => {
     const fetchService = async () => {
       if (serviceId) {
+        if (!session?.user?.id) {
+          showToast('You must be logged in to edit a service.', 'error');
+          onNavigate('auth');
+          return;
+        }
         setIsLoading(true);
+
+        // CRITICAL: Add developer_id to the query to ensure ownership.
         const { data, error } = await supabase
           .from('services')
           .select('*')
           .eq('id', serviceId)
+          .eq('developer_id', session.user.id) // Security check
           .single();
 
-        if (error) {
-          showToast(`Error fetching service, showing demo data.`, 'error');
-          console.warn(`Error fetching service ${serviceId}, falling back to mock data:`, error.message);
-          const mockService = mockServices.find(s => s.id === serviceId);
-          if (mockService) {
-              setFormData(mockService);
-              if(mockService.imageUrl) setImages([mockService.imageUrl]);
-          } else {
-              showToast(`Could not find demo service with ID ${serviceId}.`, 'error');
-              onNavigate('developer-dashboard');
-          }
-        } else if (data) {
-          setFormData(data as Service);
-          if(data.imageUrl) setImages([data.imageUrl]);
+        if (error || !data) {
+          showToast('You do not have permission to edit this service or it does not exist.', 'error');
+          onNavigate('developer-dashboard');
+          return;
         }
+
+        setFormData(data as Service);
+        if(data.imageUrl) setImages([data.imageUrl]);
         setIsLoading(false);
+
       } else {
         setFormData(initialFormData);
       }
     };
     fetchService();
-  }, [serviceId, onNavigate, showToast, initialFormData]);
+  }, [serviceId, onNavigate, showToast, initialFormData, session]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
