@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 interface HeroSectionProps {
@@ -26,12 +27,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
               OWSCORP connects you with top-tier developers and cutting-edge digital products. Find, buy, and deploy agentic AI, automation tools, and applications with confidence.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <a href="#" className="inline-block bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-900 transition-transform transform hover:scale-105 shadow-lg">
+              <button onClick={() => onNavigate('categories-list')} className="inline-block bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-900 transition-transform transform hover:scale-105 shadow-lg">
                 Explore Services
-              </a>
-              <a href="#" className="inline-block bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105 shadow-lg">
+              </button>
+              <button onClick={() => onNavigate('auth', { initialForm: 'signup' })} className="inline-block bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105 shadow-lg">
                 Become a Seller
-              </a>
+              </button>
             </div>
             <div className="mt-10 relative">
                <form onSubmit={handleSearchSubmit}>

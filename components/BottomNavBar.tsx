@@ -26,8 +26,17 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ onNavigate, session, curren
 
   const handleNav = (page: string) => {
     if (page === 'profile') {
-      // Navigate to a future dashboard/profile page if logged in, otherwise auth page
-      onNavigate(session ? 'dashboard' : 'auth', { initialForm: 'login' }); 
+      if (session) {
+        const isDeveloper = session.user?.user_metadata?.user_type === 'developer';
+        if (isDeveloper) {
+          onNavigate('developer-dashboard');
+        } else {
+          // Placeholder for customer dashboard
+          alert("Customer dashboard is coming soon!");
+        }
+      } else {
+        onNavigate('auth', { initialForm: 'login' });
+      }
     } else if (page === 'categories') {
       if (currentPage === 'home') {
         document.getElementById('categories-section')?.scrollIntoView({ behavior: 'smooth' });
@@ -42,9 +51,10 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ onNavigate, session, curren
     }
   };
   
-  // Normalize currentPage for comparison (e.g., developer page is a type of profile view)
+  // Normalize currentPage for comparison
   const getActivePage = () => {
-      if (['auth', 'developer', 'dashboard'].includes(currentPage)) return 'profile';
+      const developerPages = ['developer', 'developer-dashboard', 'developer-settings', 'service-management'];
+      if (['auth', ...developerPages].includes(currentPage)) return 'profile';
       if (['category', 'categories-list'].includes(currentPage)) return 'categories';
       return currentPage;
   }

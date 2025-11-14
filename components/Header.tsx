@@ -12,13 +12,14 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const isDeveloper = session?.user?.user_metadata?.user_type === 'developer';
 
   const navLinks = [
-    { name: 'Services', href: '#' },
-    { name: 'Developers', href: '#' },
-    { name: 'About', href: '#' },
-    { name: 'Support', href: '#' },
-    { name: 'Contact Us', href: '#' },
+    { name: 'Services', page: 'categories-list' },
+    { name: 'Developers', page: 'developer', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
+    { name: 'About', page: 'about' },
+    { name: 'Support', disabled: true },
+    { name: 'Contact', page: 'contact', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
   ];
 
   const handleLogout = async () => {
@@ -45,20 +46,26 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session }) =
               >
                 Home
               </button>
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="text-gray-600 hover:text-primary font-medium transition duration-150 ease-in-out"
-                >
-                  {link.name}
-                </a>
-              ))}
+              {navLinks.map((link) => {
+                if (link.disabled) {
+                  return <span key={link.name} className="text-gray-400 cursor-not-allowed font-medium flex items-center">{link.name}</span>
+                }
+                return (
+                  <button key={link.name} onClick={() => onNavigate(link.page!, link.params)} className="text-gray-600 hover:text-primary font-medium transition duration-150 ease-in-out">
+                    {link.name}
+                  </button>
+                )
+              })}
             </nav>
             <div className="hidden md:flex items-center space-x-4">
                {session ? (
                 <>
-                  <span className="text-gray-600 hidden sm:inline">Welcome, {welcomeName}</span>
+                  <span className="text-gray-600 hidden lg:inline">Welcome, {welcomeName}</span>
+                   {isDeveloper && (
+                      <button onClick={() => onNavigate('developer-dashboard')} className="text-gray-600 hover:text-primary font-medium">
+                          Dashboard
+                      </button>
+                  )}
                   <button onClick={handleLogout} className="bg-primary text-white px-4 py-2 rounded-md hover:bg-blue-900 transition duration-150 ease-in-out font-medium">
                     Logout
                   </button>

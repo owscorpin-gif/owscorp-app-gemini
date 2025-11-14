@@ -16,6 +16,10 @@ import BottomNavBar from './components/BottomNavBar';
 import CategoriesListPage from './pages/CategoriesListPage';
 import ContactPage from './pages/ContactPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import AboutPage from './pages/AboutPage';
+import DeveloperDashboardPage from './pages/DeveloperDashboardPage';
+import DeveloperSettingsPage from './pages/DeveloperSettingsPage';
+import ServiceManagementPage from './pages/ServiceManagementPage';
 
 const App: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -163,6 +167,19 @@ const App: React.FC = () => {
                   session={session}
                   showToast={showToast}
                 />;
+      case 'about':
+        return <AboutPage onNavigate={handleNavigate} />;
+      case 'developer-dashboard':
+        return <DeveloperDashboardPage onNavigate={handleNavigate} session={session} showToast={showToast} />;
+      case 'developer-settings':
+        return <DeveloperSettingsPage onNavigate={handleNavigate} session={session} showToast={showToast} />;
+      case 'service-management':
+        return <ServiceManagementPage 
+                  onNavigate={handleNavigate} 
+                  session={session} 
+                  showToast={showToast}
+                  serviceId={currentView.params.serviceId} 
+                />;
       case 'home':
       default:
         return <HomePage onAddToCart={handleAddToCart} onNavigate={handleNavigate} />;
@@ -179,7 +196,7 @@ const App: React.FC = () => {
           {renderPage()}
         </ErrorBoundary>
       </main>
-      {showHeaderFooter && <Footer />}
+      {showHeaderFooter && <Footer onNavigate={handleNavigate} />}
       {showHeaderFooter && <ChatbotWidget />}
       {showHeaderFooter && <BottomNavBar onNavigate={handleNavigate} session={session} currentPage={currentView.page} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

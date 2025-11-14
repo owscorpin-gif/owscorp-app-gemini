@@ -12,25 +12,45 @@ interface MobileSidebarProps {
 }
 
 const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNavigate, session, cartItemCount }) => {
+  const isDeveloper = session?.user?.user_metadata?.user_type === 'developer';
+  
   const handleNavigation = (page: string, params = {}) => {
     onNavigate(page, params);
     onClose();
+  };
+
+  const handleDashboardNav = () => {
+    if (isDeveloper) {
+      handleNavigation('developer-dashboard');
+    } else {
+      alert("Customer dashboard coming soon!");
+    }
+  };
+
+  const handleSettingsNav = () => {
+    if (isDeveloper) {
+      handleNavigation('developer-settings');
+    } else {
+      alert("Customer settings coming soon!");
+    }
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     handleNavigation('home');
   };
-
-  const secondaryLinks = [
-    { name: 'My Dashboard', page: 'dashboard' }, // Placeholder
-    { name: 'Support Center', page: 'support' }, // Placeholder
-    { name: 'Settings', page: 'settings' }, // Placeholder
-    { name: 'About Us', page: 'about' }, // Placeholder
-    { name: 'Contact Us', page: 'contact' }, // Placeholder
-  ];
   
   const welcomeName = session?.user?.user_metadata?.full_name?.split(' ')[0] || session?.user?.email || 'User';
+
+  const NavButton: React.FC<{onClick: () => void, children: React.ReactNode, disabled?: boolean}> = ({ onClick, children, disabled }) => (
+     <button
+      onClick={onClick}
+      disabled={disabled}
+      className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+    >
+      {children}
+    </button>
+  );
 
   return (
     <>
@@ -66,17 +86,14 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNaviga
 
           {/* Navigation */}
           <nav className="flex-grow p-4 space-y-2">
-            {secondaryLinks.map(link => (
-              <a
-                key={link.name}
-                href="#"
-                onClick={(e) => { e.preventDefault(); handleNavigation(link.page); }}
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-              >
-                {link.name}
-              </a>
-            ))}
-            <button onClick={() => handleNavigation('cart')} className="relative flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 w-full text-left">
+            {session && <NavButton onClick={handleDashboardNav}>My Dashboard</NavButton>}
+            <NavButton onClick={() => handleNavigation('categories-list')}>Services</NavButton>
+            <NavButton onClick={() => handleNavigation('about')}>About Us</NavButton>
+            {session && <NavButton onClick={handleSettingsNav}>Settings</NavButton>}
+            <NavButton onClick={() => handleNavigation('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })}>Contact</NavButton>
+            <NavButton onClick={() => {}} disabled={true}>Support Center</NavButton>
+            
+            <button onClick={() => handleNavigation('cart')} className="relative flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 w-full text-left rounded-md">
               <span>Shopping Cart</span>
               {cartItemCount > 0 && (
                 <span className="ml-auto bg-primary text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">

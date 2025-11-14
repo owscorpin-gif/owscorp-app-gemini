@@ -1,7 +1,11 @@
 
 import React from 'react';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+  onNavigate: (page: string, params?: any) => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const socialLinks = [
     { name: 'Facebook', icon: <svg fill="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="w-5 h-5" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"></path></svg> },
     { name: 'Twitter', icon: <svg fill="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="w-5 h-5" viewBox="0 0 24 24"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"></path></svg> },
@@ -9,46 +13,49 @@ const Footer: React.FC = () => {
     { name: 'LinkedIn', icon: <svg fill="currentColor" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="0" className="w-5 h-5" viewBox="0 0 24 24"><path stroke="none" d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"></path><circle cx="4" cy="4" r="2" stroke="none"></circle></svg> },
   ]
   
+  const textLinkClass = "text-gray-600 hover:text-gray-800 text-left w-full";
+  const disabledTextLinkClass = "text-gray-400 cursor-not-allowed";
+
   return (
     <footer className="bg-white text-gray-600 body-font">
       <div className="container px-5 py-24 mx-auto flex md:items-center lg:items-start md:flex-row md:flex-nowrap flex-wrap flex-col">
         <div className="w-64 flex-shrink-0 md:mx-0 mx-auto text-center md:text-left">
-          <a href="#" className="flex title-font font-medium items-center md:justify-start justify-center text-gray-900">
+          <button onClick={() => onNavigate('home')} className="flex title-font font-medium items-center md:justify-start justify-center text-gray-900">
              <span className="text-2xl font-bold font-heading text-primary">OWSCORP</span>
-          </a>
+          </button>
           <p className="mt-2 text-sm text-gray-500">Online Web Solution & Corporation</p>
         </div>
         <div className="flex-grow flex flex-wrap md:pl-20 -mb-10 md:mt-0 mt-10 md:text-left text-center">
           <div className="lg:w-1/4 md:w-1/2 w-full px-4">
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">SERVICES</h2>
-            <nav className="list-none mb-10">
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Web Apps</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Mobile Apps</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Desktop Apps</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">AI Agents</a></li>
+            <nav className="list-none mb-10 space-y-2">
+              <li><button onClick={() => onNavigate('category', { categoryName: 'Web Application' })} className={textLinkClass}>Web Apps</button></li>
+              <li><button onClick={() => onNavigate('category', { categoryName: 'Mobile App' })} className={textLinkClass}>Mobile Apps</button></li>
+              <li><button onClick={() => onNavigate('category', { categoryName: 'Desktop Software' })} className={textLinkClass}>Desktop Apps</button></li>
+              <li><button onClick={() => onNavigate('category', { categoryName: 'Agentic AI' })} className={textLinkClass}>AI Agents</button></li>
             </nav>
           </div>
           <div className="lg:w-1/4 md:w-1/2 w-full px-4">
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">COMPANY</h2>
-            <nav className="list-none mb-10">
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">About Us</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Careers</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Contact</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Blog</a></li>
+            <nav className="list-none mb-10 space-y-2">
+              <li><button onClick={() => onNavigate('about')} className={textLinkClass}>About Us</button></li>
+              <li><span className={disabledTextLinkClass}>Careers</span></li>
+              <li><button onClick={() => onNavigate('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })} className={textLinkClass}>Contact</button></li>
+              <li><span className={disabledTextLinkClass}>Blog</span></li>
             </nav>
           </div>
           <div className="lg:w-1/4 md:w-1/2 w-full px-4">
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">LEGAL</h2>
-            <nav className="list-none mb-10">
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Terms of Service</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Privacy Policy</a></li>
+            <nav className="list-none mb-10 space-y-2">
+              <li><span className={disabledTextLinkClass}>Terms of Service</span></li>
+              <li><span className={disabledTextLinkClass}>Privacy Policy</span></li>
             </nav>
           </div>
           <div className="lg:w-1/4 md:w-1/2 w-full px-4">
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">DEVELOPERS</h2>
-            <nav className="list-none mb-10">
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Sell Your Software</a></li>
-              <li><a href="#" className="text-gray-600 hover:text-gray-800">Developer Docs</a></li>
+            <nav className="list-none mb-10 space-y-2">
+              <li><button onClick={() => onNavigate('auth', { initialForm: 'signup' })} className={textLinkClass}>Sell Your Software</button></li>
+              <li><span className={disabledTextLinkClass}>Developer Docs</span></li>
             </nav>
           </div>
         </div>
