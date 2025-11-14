@@ -6,14 +6,11 @@ interface CartPageProps {
   onNavigate: (page: string) => void;
   onRemoveFromCart: (itemId: string) => void;
   onUpdateQuantity: (itemId: string, newQuantity: number) => void;
+  onPurchase: () => void;
 }
 
-const CartPage: React.FC<CartPageProps> = ({ cartItems, onNavigate, onRemoveFromCart, onUpdateQuantity }) => {
+const CartPage: React.FC<CartPageProps> = ({ cartItems, onNavigate, onRemoveFromCart, onUpdateQuantity, onPurchase }) => {
   const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-
-  const handleCheckout = () => {
-    alert('Checkout functionality is under development. Thank you for your patience!');
-  };
 
   return (
     <div className="bg-white py-20">
@@ -95,7 +92,7 @@ const CartPage: React.FC<CartPageProps> = ({ cartItems, onNavigate, onRemoveFrom
               </dl>
               <div className="mt-6">
                 <button
-                  onClick={handleCheckout}
+                  onClick={onPurchase}
                   type="button"
                   className="w-full bg-accent text-white font-bold py-3 px-4 rounded-lg shadow-sm hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
                 >

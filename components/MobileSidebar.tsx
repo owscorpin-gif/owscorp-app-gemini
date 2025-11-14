@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
@@ -23,7 +22,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNaviga
     if (isDeveloper) {
       handleNavigation('developer-dashboard');
     } else {
-      alert("Customer dashboard coming soon!");
+      handleNavigation('customer-dashboard');
     }
   };
 

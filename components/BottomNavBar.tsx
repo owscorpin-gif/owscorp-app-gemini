@@ -1,4 +1,3 @@
-
 import React from 'react';
 import type { Session } from '@supabase/supabase-js';
 
@@ -31,8 +30,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ onNavigate, session, curren
         if (isDeveloper) {
           onNavigate('developer-dashboard');
         } else {
-          // Placeholder for customer dashboard
-          alert("Customer dashboard is coming soon!");
+          onNavigate('customer-dashboard');
         }
       } else {
         onNavigate('auth', { initialForm: 'login' });
@@ -54,7 +52,8 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ onNavigate, session, curren
   // Normalize currentPage for comparison
   const getActivePage = () => {
       const developerPages = ['developer', 'developer-dashboard', 'developer-settings', 'service-management'];
-      if (['auth', ...developerPages].includes(currentPage)) return 'profile';
+      const profilePages = ['auth', 'customer-dashboard', ...developerPages];
+      if (profilePages.includes(currentPage)) return 'profile';
       if (['category', 'categories-list'].includes(currentPage)) return 'categories';
       return currentPage;
   }

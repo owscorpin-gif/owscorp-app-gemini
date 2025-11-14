@@ -20,9 +20,11 @@ import AboutPage from './pages/AboutPage';
 import DeveloperDashboardPage from './pages/DeveloperDashboardPage';
 import DeveloperSettingsPage from './pages/DeveloperSettingsPage';
 import ServiceManagementPage from './pages/ServiceManagementPage';
+import CustomerDashboardPage from './pages/CustomerDashboardPage';
 
 const App: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [purchasedItems, setPurchasedItems] = useState<Service[]>([]);
   const [currentView, setCurrentView] = useState<{ page: string; params: any }>({ page: 'home', params: {} });
   const [toast, setToast] = useState<ToastState | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -119,6 +121,17 @@ const App: React.FC = () => {
     }
   }, [handleRemoveFromCart]);
 
+  const handlePurchase = useCallback(() => {
+    setPurchasedItems(prev => {
+        const purchasedIds = new Set(prev.map(item => item.id));
+        const newItems = cartItems.filter(cartItem => !purchasedIds.has(cartItem.id));
+        return [...prev, ...newItems];
+    });
+    setCartItems([]);
+    showToast('Thank you for your purchase! Your items are in your dashboard.', 'success');
+    handleNavigate('customer-dashboard');
+  }, [cartItems, showToast, handleNavigate]);
+
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
   const renderPage = () => {
@@ -150,6 +163,7 @@ const App: React.FC = () => {
                   onNavigate={handleNavigate} 
                   onRemoveFromCart={handleRemoveFromCart}
                   onUpdateQuantity={handleUpdateQuantity}
+                  onPurchase={handlePurchase}
                 />;
        case 'category':
         return <CategoryPage 
@@ -169,6 +183,12 @@ const App: React.FC = () => {
                 />;
       case 'about':
         return <AboutPage onNavigate={handleNavigate} />;
+      case 'customer-dashboard':
+        return <CustomerDashboardPage
+                  purchasedItems={purchasedItems}
+                  onNavigate={handleNavigate}
+                  showToast={showToast}
+                />;
       case 'developer-dashboard':
         return <DeveloperDashboardPage onNavigate={handleNavigate} session={session} showToast={showToast} />;
       case 'developer-settings':
