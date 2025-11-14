@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import MobileSidebar from './MobileSidebar';
@@ -20,9 +18,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session, onL
   // Fix: Explicitly type navLinks to allow for optional 'disabled' and 'page' properties.
   const navLinks: { name: string; page?: string; params?: any; disabled?: boolean }[] = [
     { name: 'Services', page: 'categories-list' },
-    { name: 'Developers', page: 'developer', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
+    { name: 'Developers', page: 'developer', params: { developer_id: 'ai-genix', developerName: 'AI Genix' } },
     { name: 'About', page: 'about' },
-    { name: 'Support', page: 'contact', params: { developerId: 'ai-genix', developerName: 'AI Genix' } },
+    { name: 'Support', page: 'contact' },
   ];
 
   const handleLogout = () => {

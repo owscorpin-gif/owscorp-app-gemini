@@ -1,18 +1,22 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import type { Service } from '../types';
-import { services } from '../data/services';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import type { Service, ToastType } from '../types';
 import ServiceCard from '../components/ServiceCard';
 import ServiceQuickViewModal from '../components/ServiceQuickViewModal';
 import FilterSidebar, { Filters } from '../components/FilterSidebar';
+import { supabase } from '../supabaseClient';
+import { services as mockServices } from '../data/services';
 
 interface SearchResultsPageProps {
   query: string;
   onNavigate: (page: string, params?: any) => void;
   onAddToCart: (service: Service) => void;
+  showToast: (message: string, type?: ToastType) => void;
 }
 
-const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate, onAddToCart }) => {
+const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate, onAddToCart, showToast }) => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     price_min: '',
     price_max: '',
@@ -20,14 +24,39 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
     rating: 0,
   });
 
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .textSearch('title', `'${query}'`);
+
+      if (error) {
+        console.warn("Error searching services, falling back to mock data:", error.message);
+        showToast('Could not perform live search. Showing demo content.', 'error');
+        const searchResults = mockServices.filter(s => 
+          s.title.toLowerCase().includes(query.toLowerCase()) || 
+          s.description.toLowerCase().includes(query.toLowerCase())
+        );
+        setServices(searchResults);
+      } else {
+        setServices(data as Service[]);
+      }
+      setLoading(false);
+    };
+
+    if (query) {
+      fetchServices();
+    } else {
+      setServices([]);
+      setLoading(false);
+    }
+  }, [query, showToast]);
+
+
   const filteredServices = useMemo(() => {
     return services.filter(service => {
-      // Search query filter
-      const matchesQuery = service.title.toLowerCase().includes(query.toLowerCase()) ||
-                           service.description.toLowerCase().includes(query.toLowerCase()) ||
-                           service.developer.toLowerCase().includes(query.toLowerCase());
-      if (!matchesQuery) return false;
-
       // Price filter
       const minPrice = parseFloat(filters.price_min);
       const maxPrice = parseFloat(filters.price_max);
@@ -44,9 +73,9 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
 
       return true;
     });
-  }, [query, filters]);
+  }, [services, filters]);
   
-  const allCategories = useMemo(() => [...new Set(services.map(s => s.category))], []);
+  const allCategories = useMemo(() => [...new Set(services.map(s => s.category))], [services]);
 
   const handleOpenModal = (service: Service) => {
     setSelectedService(service);
@@ -84,7 +113,11 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ query, onNavigate
             </aside>
             
             <main className="lg:col-span-3">
-              {filteredServices.length > 0 ? (
+              {loading ? (
+                 <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+                 </div>
+              ) : filteredServices.length > 0 ? (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-8">
                   {filteredServices.map(service => (
                     <ServiceCard 

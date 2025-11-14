@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Service, ToastType } from '../types';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from '../supabaseClient';
 
 interface CustomerDashboardPageProps {
-  purchasedItems: Service[];
   onNavigate: (page: string, params?: any) => void;
+  session: Session | null;
   showToast: (message: string, type?: ToastType) => void;
 }
 
@@ -13,12 +15,53 @@ const DownloadIcon = () => (
     </svg>
 );
 
-const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({ purchasedItems, onNavigate, showToast }) => {
+const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({ onNavigate, session, showToast }) => {
+  const [purchasedItems, setPurchasedItems] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPurchasedItems = async () => {
+      if (!session?.user?.id) {
+        showToast('You must be logged in to view your dashboard.', 'error');
+        onNavigate('auth');
+        return;
+      }
+      
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          service:services (*)
+        `)
+        .eq('user_id', session.user.id);
+
+      if (error) {
+        showToast('Could not fetch purchase history.', 'error');
+        console.warn('Error fetching purchased items:', error.message);
+      } else {
+        const items = data.map(order => order.service).filter(Boolean) as Service[];
+        setPurchasedItems(items);
+      }
+      setLoading(false);
+    };
+
+    if (session) {
+      fetchPurchasedItems();
+    }
+  }, [session, onNavigate, showToast]);
 
   const handleDownload = (serviceTitle: string) => {
     showToast(`Downloading "${serviceTitle}"...`, 'success');
     // In a real app, this would trigger a file download.
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-secondary min-h-screen">

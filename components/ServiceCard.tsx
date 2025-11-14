@@ -25,7 +25,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onOpenModal, onAddTo
     const handleNavigateToDeveloper = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (onNavigate) {
-            onNavigate('developer', { developerId: service.developerId, developerName: service.developer });
+            onNavigate('developer', { developer_id: service.developer_id, developerName: service.developer });
         }
     };
     

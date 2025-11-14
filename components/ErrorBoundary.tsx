@@ -9,20 +9,20 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false
-  };
+  // Fix: Replaced the constructor with modern class property syntax for state initialization.
+  // This resolves typing errors where `this.state` and `this.props` were not being recognized.
+  state: State = { hasError: false };
 
-  public static getDerivedStateFromError(_: Error): State {
+  static getDerivedStateFromError(_: Error): State {
     return { hasError: true };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
     // In a real application, you would log this to an error reporting service
   }
 
-  public render() {
+  render() {
     if (this.state.hasError) {
       return (
         <div className="text-center p-8 bg-white max-w-lg mx-auto my-20 rounded-lg shadow-lg border border-red-200">

@@ -1,13 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import type { ToastType, Service } from '../types';
-import { services } from '../data/services';
-import RevenueChart from '../components/RevenueChart';
-import { salesData } from '../data/salesData';
-import CategoryRevenueChart from '../components/CategoryRevenueChart';
-import { categorySalesData } from '../data/categorySalesData';
 import ConfirmationModal from '../components/ConfirmationModal';
-import AddServiceModal from '../components/AddServiceModal';
+import { supabase } from '../supabaseClient';
+import { services as mockServices } from '../data/services';
 
 // --- SVG Icons ---
 const DollarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 6v1m6-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
@@ -40,31 +36,52 @@ const AnalyticsCard: React.FC<{ title: string, value: string, icon: React.ReactN
 const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavigate, session, showToast }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [developerServices, setDeveloperServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Assuming the developer is 'AI Genix' for this demo
-  const developerId = 'ai-genix';
-  const developerServices = services.filter(s => s.developerId === developerId);
-  const developerSalesData = salesData.filter(d => d.developerId === developerId);
-  const developerCategorySales = categorySalesData.filter(d => d.developerId === developerId);
+  const fetchDeveloperServices = async () => {
+    if (!session?.user?.id) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('services')
+      .select('*')
+      .eq('developer_id', session.user.id);
+    
+    if (error) {
+      showToast('Could not fetch your services, showing demo data.', 'error');
+      console.warn('Error fetching developer services, falling back to mock data:', error.message);
+      const demoServices = mockServices.filter(s => s.developer_id === 'ai-genix');
+      setDeveloperServices(demoServices);
+    } else {
+      setDeveloperServices(data as Service[]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchDeveloperServices();
+  }, [session, showToast]);
+
 
   const handleOpenDeleteModal = (service: Service) => {
     setServiceToDelete(service);
     setIsDeleteModalOpen(true);
   };
   
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!serviceToDelete) return;
-    showToast(`"${serviceToDelete.title}" has been deleted. (Demo)`, 'success');
+    const { error } = await supabase.from('services').delete().eq('id', serviceToDelete.id);
+    if (error) {
+      showToast(error.message, 'error');
+    } else {
+      showToast(`"${serviceToDelete.title}" has been deleted.`, 'success');
+      fetchDeveloperServices(); // Refresh the list
+    }
     setIsDeleteModalOpen(false);
     setServiceToDelete(null);
-  };
-  
-  const handleAddService = (newService: Partial<Service>) => {
-    console.log("Adding new service:", newService);
-    // In a real app, you would add the service to your state/backend here.
-    showToast(`Service "${newService.title}" created successfully!`, 'success');
-    setIsAddModalOpen(false);
   };
   
   const welcomeName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Developer';
@@ -82,42 +99,19 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
              <button onClick={() => onNavigate('developer-settings')} className="bg-white text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm hover:bg-gray-100 border">
                 Edit Profile
               </button>
-             <button onClick={() => setIsAddModalOpen(true)} className="bg-accent text-white font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-emerald-600">
+             <button onClick={() => onNavigate('service-management')} className="bg-accent text-white font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-emerald-600">
                 + List New Service
               </button>
           </div>
         </div>
 
-        {/* Analytics Section */}
+        {/* Analytics Section - Values are placeholders for a real analytics backend */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <AnalyticsCard title="Total Revenue" value="$12,480" icon={<DollarIcon />} color="from-blue-500 to-blue-700" />
-          <AnalyticsCard title="Services Sold" value="82" icon={<CartIcon />} color="from-emerald-500 to-emerald-700" />
-          <AnalyticsCard title="Total Sales" value="125" icon={<SalesIcon />} color="from-indigo-500 to-indigo-700" />
-          <AnalyticsCard title="Average Rating" value="4.9" icon={<StarIcon />} color="from-amber-500 to-amber-700" />
+          <AnalyticsCard title="Total Revenue" value="--" icon={<DollarIcon />} color="from-blue-500 to-blue-700" />
+          <AnalyticsCard title="Services Sold" value="--" icon={<CartIcon />} color="from-emerald-500 to-emerald-700" />
+          <AnalyticsCard title="Listed Services" value={loading ? '--' : developerServices.length.toString()} icon={<SalesIcon />} color="from-indigo-500 to-indigo-700" />
+          <AnalyticsCard title="Average Rating" value="--" icon={<StarIcon />} color="from-amber-500 to-amber-700" />
         </div>
-
-        {/* Revenue Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Revenue Overview</h2>
-                <RevenueChart data={developerSalesData} />
-            </div>
-            <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
-                <h2 className="text-xl font-bold text-gray-800 mb-6">Revenue by Category</h2>
-                <CategoryRevenueChart data={developerCategorySales} />
-            </div>
-        </div>
-        
-        {/* Sales Trend Analysis Section */}
-        <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg mb-8">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Sales Trend Analysis</h2>
-            <p className="text-gray-600 leading-relaxed">
-              Based on your sales data, March was your strongest month, likely driven by the new "AI Sales Agent" launch campaign. February saw a slight dip, which is a common seasonal trend.
-              <br/><br/>
-              <strong>Recommendation:</strong> Consider running a mid-year promotion in July or August to boost sales during traditionally slower months. Replicating marketing efforts from your successful March campaign could yield significant results.
-            </p>
-        </div>
-
 
         {/* Service Management Section */}
         <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg">
@@ -133,7 +127,9 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
                 </tr>
               </thead>
               <tbody>
-                {developerServices.map(service => (
+                {loading ? (
+                    <tr><td colSpan={4} className="text-center py-8">Loading services...</td></tr>
+                ) : developerServices.map(service => (
                   <tr key={service.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-4 px-4 font-medium text-gray-800">{service.title}</td>
                     <td className="py-4 px-4 text-gray-600 hidden md:table-cell">{service.category}</td>
@@ -152,7 +148,7 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
                 ))}
               </tbody>
             </table>
-             {developerServices.length === 0 && (
+             {!loading && developerServices.length === 0 && (
               <p className="text-center py-8 text-gray-500">You haven't listed any services yet.</p>
             )}
           </div>
@@ -164,11 +160,6 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
         onConfirm={handleConfirmDelete}
         title="Delete Service"
         message={`Are you sure you want to delete "${serviceToDelete?.title}"? This action cannot be undone.`}
-      />
-       <AddServiceModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAddService={handleAddService}
       />
     </div>
   );

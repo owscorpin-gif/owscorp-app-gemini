@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import type { Provider, Session } from '@supabase/supabase-js';
+import type { Provider } from '@supabase/supabase-js';
 import type { ToastType } from '../types';
+import { supabase } from '../supabaseClient';
 
 interface AuthPageProps {
   onNavigate: (page: string, params?: any) => void;
   initialForm?: 'login' | 'signup';
   showToast: (message: string, type: ToastType) => void;
-  onLoginSuccess: (session: Session) => void;
 }
 
 const SpinnerIcon: React.FC = () => (
@@ -17,7 +17,7 @@ const SpinnerIcon: React.FC = () => (
 );
 
 
-const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', showToast, onLoginSuccess }) => {
+const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', showToast }) => {
   const [formType, setFormType] = useState<'login' | 'signup' | 'reset'>(initialForm);
   const [showPassword, setShowPassword] = useState(false);
   const [userType, setUserType] = useState<'customer' | 'developer'>('customer');
@@ -32,64 +32,52 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', 
     setFormType(type);
   };
 
-  const handleAuthAction = (e: React.FormEvent) => {
+  const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate API call for mock authentication
-    setTimeout(() => {
-        if (formType === 'reset') {
-            showToast('Password reset link sent to your email (Demo).', 'success');
+    if (formType === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) showToast(error.message, 'error');
+        // On success, the listener in App.tsx will handle navigation.
+    } else if (formType === 'signup') {
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    user_type: userType,
+                },
+            },
+        });
+        if (error) {
+            showToast(error.message, 'error');
         } else {
-             // Create a realistic, but mock, session object.
-            // FIX: Added missing properties to satisfy the Session type.
-            const mockSession: Session = {
-                access_token: 'mock_access_token',
-                token_type: 'bearer',
-                expires_in: 3600,
-                expires_at: Math.floor(Date.now() / 1000) + 3600,
-                refresh_token: 'mock_refresh_token',
-                user: {
-                    id: 'mock-user-id-' + Math.random(),
-                    app_metadata: { provider: 'email' },
-                    user_metadata: {
-                        full_name: fullName,
-                        user_type: formType === 'signup' ? userType : (email.includes('dev') ? 'developer' : 'customer'),
-                    },
-                    aud: 'authenticated',
-                    email: email,
-                    created_at: new Date().toISOString(),
-                }
-            };
-            onLoginSuccess(mockSession);
+            showToast('Check your email for a confirmation link!', 'success');
         }
-        setLoading(false);
-    }, 1000);
+    } else if (formType === 'reset') {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin, // URL to redirect to after password reset
+        });
+        if (error) {
+            showToast(error.message, 'error');
+        } else {
+            showToast('Password reset link sent to your email.', 'success');
+        }
+    }
+
+    setLoading(false);
   };
   
-   const handleOAuthLogin = (provider: Provider) => {
+   const handleOAuthLogin = async (provider: Provider) => {
     setLoading(true);
-     setTimeout(() => {
-        showToast(`Signing in with ${provider} (Demo)...`, 'success');
-        // FIX: Added missing properties to satisfy the Session type.
-        const mockSession: Session = {
-                access_token: 'mock_oauth_token',
-                token_type: 'bearer',
-                expires_in: 3600,
-                expires_at: Math.floor(Date.now() / 1000) + 3600,
-                refresh_token: 'mock_oauth_refresh_token',
-                user: {
-                    id: 'mock-oauth-id-' + Math.random(),
-                    app_metadata: { provider: provider },
-                    user_metadata: { full_name: 'OAuth User', user_type: 'customer' },
-                    aud: 'authenticated',
-                    email: `${provider}@example.com`,
-                    created_at: new Date().toISOString(),
-                }
-            };
-        onLoginSuccess(mockSession);
-        setLoading(false);
-     }, 1000);
+    const { error } = await supabase.auth.signInWithOAuth({ provider });
+    if (error) {
+      showToast(error.message, 'error');
+      setLoading(false);
+    }
+     // On success, Supabase handles the redirect, and the listener in App.tsx will catch the session.
   };
 
 

@@ -1,5 +1,3 @@
-
-
 import React from 'react';
 import { ToastType } from '../types';
 
@@ -48,15 +46,15 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, showToast }) => {
           <div className="lg:w-1/4 md:w-1/2 w-full px-4">
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">LEGAL</h2>
             <nav className="list-none mb-10 space-y-2">
-              <li><button onClick={() => onNavigate('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })} className={textLinkClass}>Terms of Service</button></li>
-              <li><button onClick={() => onNavigate('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })} className={textLinkClass}>Privacy Policy</button></li>
+              <li><button onClick={() => onNavigate('contact')} className={textLinkClass}>Terms of Service</button></li>
+              <li><button onClick={() => onNavigate('contact')} className={textLinkClass}>Privacy Policy</button></li>
             </nav>
           </div>
           <div className="lg:w-1/4 md:w-1/2 w-full px-4">
             <h2 className="title-font font-bold text-gray-900 tracking-widest text-sm mb-3">DEVELOPERS</h2>
             <nav className="list-none mb-10 space-y-2">
               <li><button onClick={() => onNavigate('auth', { initialForm: 'signup' })} className={textLinkClass}>Sell Your Software</button></li>
-              <li><button onClick={() => onNavigate('contact', { developerId: 'ai-genix', developerName: 'AI Genix' })} className={textLinkClass}>Developer Docs</button></li>
+              <li><button onClick={() => onNavigate('contact')} className={textLinkClass}>Developer Docs</button></li>
             </nav>
           </div>
         </div>

@@ -20,41 +20,74 @@ import DeveloperDashboardPage from './pages/DeveloperDashboardPage';
 import DeveloperSettingsPage from './pages/DeveloperSettingsPage';
 import ServiceManagementPage from './pages/ServiceManagementPage';
 import CustomerDashboardPage from './pages/CustomerDashboardPage';
+import { supabase } from './supabaseClient';
 
 const App: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [purchasedItems, setPurchasedItems] = useState<Service[]>([]);
   const [currentView, setCurrentView] = useState<{ page: string; params: any }>({ page: 'home', params: {} });
   const [toast, setToast] = useState<ToastState | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Load cart from localStorage on initial render
+  useEffect(() => {
+    try {
+      const localCart = localStorage.getItem('owscorpCart');
+      if (localCart) {
+        setCartItems(JSON.parse(localCart));
+      }
+    } catch (error) {
+      console.error("Failed to parse cart from localStorage", error);
+    }
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('owscorpCart', JSON.stringify(cartItems));
+    } catch (error) {
+      console.error("Failed to save cart to localStorage", error);
+    }
+  }, [cartItems]);
+
   const showToast = useCallback((message: string, type: ToastType = 'success') => {
     setToast({ message, type });
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500); // Simulate loading
-    return () => clearTimeout(timer);
-  }, []);
-  
   const handleNavigate = useCallback((page: string, params = {}) => {
     setCurrentView({ page, params });
     window.scrollTo(0, 0);
   }, []);
   
-  const handleLoginSuccess = useCallback((mockSession: Session) => {
-    setSession(mockSession);
-    const isDeveloper = mockSession.user?.user_metadata?.user_type === 'developer';
-    handleNavigate(isDeveloper ? 'developer-dashboard' : 'customer-dashboard');
-    showToast('Successfully signed in!', 'success');
+  useEffect(() => {
+    setLoading(true);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (_event === 'SIGNED_IN' && session) {
+        const isDeveloper = session.user?.user_metadata?.user_type === 'developer';
+        handleNavigate(isDeveloper ? 'developer-dashboard' : 'customer-dashboard');
+        showToast('Successfully signed in!', 'success');
+      }
+      if (_event === 'SIGNED_OUT') {
+         handleNavigate('home');
+         showToast('You have been signed out.', 'success');
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, [handleNavigate, showToast]);
 
-  const handleLogout = useCallback(() => {
-    setSession(null);
-    handleNavigate('home');
-    showToast('You have been signed out.', 'success');
-  }, [handleNavigate, showToast]);
+  const handleLogout = useCallback(async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      showToast(error.message, 'error');
+    }
+  }, [showToast]);
 
 
   // Handles navigation side-effect safely after render.
@@ -101,16 +134,31 @@ const App: React.FC = () => {
     }
   }, [handleRemoveFromCart]);
 
-  const handlePurchase = useCallback(() => {
-    setPurchasedItems(prev => {
-        const purchasedIds = new Set(prev.map(item => item.id));
-        const newItems = cartItems.filter(cartItem => !purchasedIds.has(cartItem.id));
-        return [...prev, ...newItems];
-    });
-    setCartItems([]);
-    showToast('Thank you for your purchase! Your items are in your dashboard.', 'success');
-    handleNavigate('customer-dashboard');
-  }, [cartItems, showToast, handleNavigate]);
+  const handlePurchase = useCallback(async () => {
+    if (!session?.user) {
+      showToast('You must be logged in to make a purchase.', 'error');
+      handleNavigate('auth', { initialForm: 'login' });
+      return;
+    }
+    
+    const orders = cartItems.map(item => ({
+        user_id: session.user.id,
+        service_id: item.id,
+        quantity: item.quantity,
+        price_at_purchase: item.price
+    }));
+
+    // In a real app, this might be a single transaction or a server-side function.
+    const { error } = await supabase.from('orders').insert(orders);
+    
+    if (error) {
+        showToast(`Purchase failed: ${error.message}`, 'error');
+    } else {
+        setCartItems([]);
+        showToast('Thank you for your purchase! Your items are in your dashboard.', 'success');
+        handleNavigate('customer-dashboard');
+    }
+  }, [cartItems, session, showToast, handleNavigate]);
 
   const cartItemCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -126,7 +174,7 @@ const App: React.FC = () => {
     switch (currentView.page) {
       case 'developer':
         return <DeveloperProfilePage 
-                  developerId={currentView.params.developerId} 
+                  developerId={currentView.params.developer_id} 
                   developerName={currentView.params.developerName} 
                   onNavigate={handleNavigate} 
                   onAddToCart={handleAddToCart}
@@ -134,9 +182,14 @@ const App: React.FC = () => {
                   showToast={showToast}
                 />;
       case 'auth':
-        return <AuthPage onNavigate={handleNavigate} initialForm={currentView.params.initialForm} showToast={showToast} onLoginSuccess={handleLoginSuccess} />;
+        return <AuthPage onNavigate={handleNavigate} initialForm={currentView.params.initialForm} showToast={showToast} />;
       case 'search':
-        return <SearchResultsPage query={currentView.params.query} onNavigate={handleNavigate} onAddToCart={handleAddToCart} />;
+        return <SearchResultsPage 
+                  query={currentView.params.query} 
+                  onNavigate={handleNavigate} 
+                  onAddToCart={handleAddToCart}
+                  showToast={showToast}
+                />;
       case 'cart':
         return <CartPage 
                   cartItems={cartItems} 
@@ -150,12 +203,13 @@ const App: React.FC = () => {
                   categoryName={currentView.params.categoryName} 
                   onNavigate={handleNavigate} 
                   onAddToCart={handleAddToCart}
+                  showToast={showToast}
                 />;
        case 'categories-list':
         return <CategoriesListPage onNavigate={handleNavigate} />;
       case 'contact':
         return <ContactPage
-                  developerId={currentView.params.developerId}
+                  developerId={currentView.params.developer_id}
                   developerName={currentView.params.developerName}
                   onNavigate={handleNavigate}
                   session={session}
@@ -165,8 +219,8 @@ const App: React.FC = () => {
         return <AboutPage onNavigate={handleNavigate} />;
       case 'customer-dashboard':
         return <CustomerDashboardPage
-                  purchasedItems={purchasedItems}
                   onNavigate={handleNavigate}
+                  session={session}
                   showToast={showToast}
                 />;
       case 'developer-dashboard':
@@ -182,7 +236,7 @@ const App: React.FC = () => {
                 />;
       case 'home':
       default:
-        return <HomePage onAddToCart={handleAddToCart} onNavigate={handleNavigate} />;
+        return <HomePage onAddToCart={handleAddToCart} onNavigate={handleNavigate} showToast={showToast} />;
     }
   }
   

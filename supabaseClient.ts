@@ -23,7 +23,13 @@ try {
   // This is expected and safe behavior in a browser-only context.
 }
 
-// The warning for placeholder credentials has been removed to avoid confusion
-// in the sandboxed environment where placeholders are expected to be used.
+if (supabaseUrl.includes('placeholderproject')) {
+    console.warn(
+        '%cSupabase client is using placeholder credentials!',
+        'color: orange; font-weight: bold; font-size: 14px;',
+        '\nAPI calls will likely fail. Please provide your Supabase URL and anonymous key.'
+    );
+}
+
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

@@ -1,18 +1,22 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { services } from '../data/services';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import ServiceCard from '../components/ServiceCard';
-import type { Service } from '../types';
+import type { Service, ToastType } from '../types';
 import ServiceQuickViewModal from '../components/ServiceQuickViewModal';
 import FilterSidebar, { Filters } from '../components/FilterSidebar';
+import { supabase } from '../supabaseClient';
+import { services as mockServices } from '../data/services';
 
 interface CategoryPageProps {
   categoryName: string;
   onNavigate: (page: string, params?: any) => void;
   onAddToCart: (service: Service) => void;
+  showToast: (message: string, type?: ToastType) => void;
 }
 
-const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, onAddToCart }) => {
+const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, onAddToCart, showToast }) => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     price_min: '',
     price_max: '',
@@ -20,9 +24,30 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, o
     rating: 0,
   });
 
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .eq('category', categoryName);
+
+      if (error) {
+        console.warn(`Error fetching services for category ${categoryName}, falling back to mock data:`, error.message);
+        showToast('Could not fetch live data. Showing demo content.', 'error');
+        const categoryServices = mockServices.filter(s => s.category === categoryName);
+        setServices(categoryServices);
+      } else {
+        setServices(data as Service[]);
+      }
+      setLoading(false);
+    };
+
+    fetchServices();
+  }, [categoryName, showToast]);
+
   const filteredServices = useMemo(() => {
     return services
-      .filter(service => service.category === categoryName)
       .filter(service => {
         // Price filter
         const minPrice = parseFloat(filters.price_min);
@@ -35,7 +60,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, o
 
         return true;
       });
-  }, [categoryName, filters]);
+  }, [services, filters]);
 
 
   const handleOpenModal = (service: Service) => {
@@ -92,7 +117,11 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, onNavigate, o
             </aside>
             
             <main className="lg:col-span-3">
-              {filteredServices.length > 0 ? (
+              {loading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredServices.length > 0 ? (
                 <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-8">
                   {filteredServices.map(service => (
                     <ServiceCard 

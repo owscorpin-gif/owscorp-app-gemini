@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { services } from '../data/services';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import ServiceCard from '../components/ServiceCard';
 import type { Service, Review, ToastType } from '../types';
 import ServiceQuickViewModal from '../components/ServiceQuickViewModal';
@@ -7,6 +6,8 @@ import type { Session } from '@supabase/supabase-js';
 import StarRatingDisplay from '../components/StarRatingDisplay';
 import StarRatingInput from '../components/StarRatingInput';
 import Pagination from '../components/Pagination';
+import { supabase } from '../supabaseClient';
+import { services as mockServices } from '../data/services';
 
 interface DeveloperProfilePageProps {
   developerId: string;
@@ -20,64 +21,78 @@ interface DeveloperProfilePageProps {
 const SERVICES_PER_PAGE = 9;
 
 const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId, developerName, onNavigate, onAddToCart, session, showToast }) => {
-  const developerServices = services.filter(service => service.developerId === developerId);
   const bioTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const reviewsLocalStorageKey = `reviews-${developerId}`;
 
-  // Pagination State
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // Reviews State
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [developerServices, setDeveloperServices] = useState<Service[]>([]);
   const [averageRating, setAverageRating] = useState<number>(0);
-  
-  // New Review Form State
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState('');
   const [reviewError, setReviewError] = useState('');
 
-  // Bio Editing State
-  const bioLocalStorageKey = `developer-bio-${developerId}`;
   const defaultBio = useMemo(() => `This is a placeholder for the developer's biography. Here, ${developerName} would describe their expertise, experience, and the types of solutions they specialize in. They might also include links to their portfolio or personal website.`, [developerName]);
 
   const [bio, setBio] = useState<string>(defaultBio);
   const [isEditingBio, setIsEditingBio] = useState(false);
 
-  // Load bio from localStorage on mount or when developerId changes
-  useEffect(() => {
-    try {
-      const storedBio = localStorage.getItem(bioLocalStorageKey);
-      setBio(storedBio || defaultBio);
-    } catch (error) {
-      console.warn("Could not read bio from localStorage", error);
-      showToast('Could not load developer bio.', 'error');
-      setBio(defaultBio);
-    }
-  }, [bioLocalStorageKey, defaultBio, showToast]);
+  const fetchReviews = useCallback(async () => {
+      const { data, error } = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('developer_id', developerId)
+          .order('created_at', { ascending: false });
 
-
-  // Fetch reviews and calculate average rating on mount
-  useEffect(() => {
-    try {
-      const storedReviews = localStorage.getItem(reviewsLocalStorageKey);
-      const parsedReviews: Review[] = storedReviews ? JSON.parse(storedReviews) : [];
-      setReviews(parsedReviews);
-
-      if (parsedReviews.length > 0) {
-        const totalRating = parsedReviews.reduce((sum, review) => sum + review.rating, 0);
-        setAverageRating(totalRating / parsedReviews.length);
+      if (error) {
+          showToast('Could not fetch reviews.', 'error');
+          console.warn('Error fetching reviews:', error.message);
+          setReviews([]);
       } else {
-        setAverageRating(0);
+          setReviews(data);
+          if (data.length > 0) {
+              const totalRating = data.reduce((sum, review) => sum + review.rating, 0);
+              setAverageRating(totalRating / data.length);
+          } else {
+              setAverageRating(0);
+          }
       }
-    } catch (error) {
-      console.error("Failed to parse reviews from localStorage", error);
-      showToast('Could not load reviews.', 'error');
-      setReviews([]);
-    }
-  }, [reviewsLocalStorageKey, showToast]);
+  }, [developerId, showToast]);
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+        setIsLoading(true);
+        // Fetch profile, services, and reviews concurrently
+        const [profileResult, servicesResult] = await Promise.all([
+             supabase.from('profiles').select('description').eq('id', developerId).single(),
+             supabase.from('services').select('*').eq('developer_id', developerId)
+        ]);
+        
+        const { data: profileData, error: profileError } = profileResult;
+        if (profileError && profileError.code !== 'PGRST116') {
+            showToast(profileError.message, 'error');
+        } else {
+            setBio(profileData?.description || defaultBio);
+        }
+
+        const { data: servicesData, error: servicesError } = servicesResult;
+         if (servicesError) {
+            showToast('Could not fetch services, showing demo data.', 'error');
+            console.warn('Error fetching developer services, falling back to mock data:', servicesError.message);
+            const devServices = mockServices.filter(s => s.developer_id === developerId);
+            setDeveloperServices(devServices);
+        } else {
+            setDeveloperServices(servicesData as Service[]);
+        }
+
+        await fetchReviews();
+        setIsLoading(false);
+    };
+    fetchData();
+  }, [developerId, showToast, defaultBio, fetchReviews]);
   
-  // Pagination Logic
   const totalPages = Math.ceil(developerServices.length / SERVICES_PER_PAGE);
   const paginatedServices = developerServices.slice(
     (currentPage - 1) * SERVICES_PER_PAGE,
@@ -87,22 +102,29 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
   const isVerified = developerServices.length > 0 ? developerServices[0].developerVerified : false;
 
   const handleEditBioClick = () => {
+    if (session?.user?.id !== developerId) {
+        showToast("You can only edit your own profile.", "error");
+        return;
+    }
     setIsEditingBio(true);
     setTimeout(() => bioTextareaRef.current?.focus(), 0);
   };
 
-  const handleSaveBioClick = () => {
-    try {
-      localStorage.setItem(bioLocalStorageKey, bio);
-      showToast('Bio saved successfully!', 'success');
-    } catch (error) {
-      console.error("Could not save bio to localStorage", error);
-      showToast('Failed to save bio. Storage might be full.', 'error');
+  const handleSaveBioClick = async () => {
+    const { error } = await supabase
+        .from('profiles')
+        .update({ description: bio, updated_at: new Date().toISOString() })
+        .eq('id', developerId);
+
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast('Bio updated successfully!', 'success');
     }
     setIsEditingBio(false);
   };
   
-  const handleReviewSubmit = (e: React.FormEvent) => {
+  const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (userRating === 0) {
       setReviewError('Please select a rating.');
@@ -113,38 +135,24 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
       return;
     }
     
-    const newReview: Review = {
-      id: new Date().toISOString(),
-      developerId,
-      reviewerName: session?.user?.user_metadata?.full_name || 'Anonymous User',
-      rating: userRating,
-      comment: userComment.trim(),
-      date: new Date().toISOString(),
-    };
+    const { error } = await supabase.from('reviews').insert({
+        developer_id: developerId,
+        user_id: session?.user?.id,
+        reviewer_name: session?.user?.user_metadata?.full_name || 'Anonymous User',
+        rating: userRating,
+        comment: userComment.trim(),
+    });
 
-    const updatedReviews = [...reviews, newReview];
-    
-    try {
-      localStorage.setItem(reviewsLocalStorageKey, JSON.stringify(updatedReviews));
-      setReviews(updatedReviews);
-      showToast('Thank you for your review!', 'success');
-    } catch (error) {
-        console.error("Could not save reviews to localStorage", error);
-        showToast('Failed to submit review. Please try again.', 'error');
-        return;
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast('Thank you for your review!', 'success');
+        await fetchReviews(); // Re-fetch reviews to show the new one
+        setUserRating(0);
+        setUserComment('');
+        setReviewError('');
     }
-
-
-    // Recalculate average rating
-    const totalRating = updatedReviews.reduce((sum, review) => sum + review.rating, 0);
-    setAverageRating(totalRating / updatedReviews.length);
-
-    // Reset form
-    setUserRating(0);
-    setUserComment('');
-    setReviewError('');
   };
-
 
   useEffect(() => {
     if (bioTextareaRef.current) {
@@ -162,6 +170,14 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     priceRange = minPrice === maxPrice ? `$${minPrice}` : `$${minPrice} - $${maxPrice}`;
+  }
+
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      );
   }
 
   return (
@@ -187,7 +203,7 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
                             {isVerified ? 'Verified Developer' : 'Not Verified'}
                         </p>
                     </div>
-                    <button onClick={() => onNavigate('contact', { developerId, developerName })} className="mt-4 md:mt-0 bg-accent text-white font-bold py-3 px-6 rounded-lg hover:bg-emerald-600 transition-transform transform hover:scale-105 shadow-lg whitespace-nowrap">
+                    <button onClick={() => onNavigate('contact', { developer_id: developerId, developerName })} className="mt-4 md:mt-0 bg-accent text-white font-bold py-3 px-6 rounded-lg hover:bg-emerald-600 transition-transform transform hover:scale-105 shadow-lg whitespace-nowrap">
                         Contact Developer
                     </button>
                 </div>
@@ -224,7 +240,7 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
                        {isEditingBio ? (
                         <button onClick={handleSaveBioClick} className="bg-accent text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-600 text-sm">Save Bio</button>
                        ) : (
-                        session?.user?.user_metadata?.user_type === 'developer' && (
+                        session?.user?.id === developerId && (
                           <button onClick={handleEditBioClick} className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 text-sm">Edit Bio</button>
                         )
                        )}
@@ -239,7 +255,6 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
             <div className="mt-16">
               <h2 className="text-2xl font-bold font-heading text-gray-800 mb-6 border-b border-gray-300 pb-4">Customer Reviews</h2>
               
-              {/* Review Submission Form */}
               {session ? (
                   <form onSubmit={handleReviewSubmit} className="bg-secondary p-6 rounded-lg mb-8">
                       <h3 className="text-lg font-bold text-gray-800 mb-2">Leave a Review</h3>
@@ -259,18 +274,17 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
                     You must be <button onClick={() => onNavigate('auth')} className="font-bold underline">logged in</button> to leave a review.
                  </p>
               )}
-
-              {/* Existing Reviews */}
+              
               {reviews.length > 0 ? (
                 <div className="space-y-6">
                   {reviews.map(review => (
                     <div key={review.id} className="bg-white p-5 rounded-lg shadow-sm border">
                       <div className="flex items-center mb-2">
                         <StarRatingDisplay rating={review.rating} />
-                        <span className="ml-auto text-sm text-gray-500">{new Date(review.date).toLocaleDateString()}</span>
+                        <span className="ml-auto text-sm text-gray-500">{new Date(review.created_at).toLocaleDateString()}</span>
                       </div>
                       <p className="text-gray-700 mb-2">{review.comment}</p>
-                      <p className="font-semibold text-gray-800 text-sm">&mdash; {review.reviewerName}</p>
+                      <p className="font-semibold text-gray-800 text-sm">&mdash; {review.reviewer_name}</p>
                     </div>
                   ))}
                 </div>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import type { ToastType, Service } from '../types';
-import { services } from '../data/services';
+import { supabase } from '../supabaseClient';
+import { services as mockServices } from '../data/services';
 
 interface ServiceManagementPageProps {
   onNavigate: (page: string, params?: any) => void;
@@ -10,93 +11,101 @@ interface ServiceManagementPageProps {
   serviceId?: string | null;
 }
 
-const ServiceManagementPage: React.FC<ServiceManagementPageProps> = ({ onNavigate, showToast, serviceId }) => {
-  const [isNewService, setIsNewService] = useState(!serviceId);
+const ServiceManagementPage: React.FC<ServiceManagementPageProps> = ({ onNavigate, session, showToast, serviceId }) => {
+  const isNewService = !serviceId;
+  
   const initialFormData = useMemo(() => ({
     title: '',
     category: 'Web Application',
     price: 0,
+    imageUrl: 'https://picsum.photos/seed/new-service/400/300',
     description: '',
-  }), []);
+    developer: session?.user?.user_metadata?.full_name || 'Unknown Developer',
+    developer_id: session?.user?.id || '',
+    developerVerified: true, // Assuming logged in developers are verified
+    rating: 0, // New services start with 0 rating
+  }), [session]);
   
   const [formData, setFormData] = useState<Partial<Service>>(initialFormData);
   const [keyFeatures, setKeyFeatures] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(!isNewService);
   const [images, setImages] = useState<string[]>([]); // URLs for existing or newly uploaded images
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  useEffect(() => {
-    if (serviceId) {
-      const existingService = services.find(s => s.id === serviceId);
-      if (existingService) {
-        setFormData(existingService);
-        setKeyFeatures('- Feature 1\n- Feature 2\n- Feature 3');
-        if(existingService.imageUrl) {
-          setImages([existingService.imageUrl]);
-        }
-        setIsNewService(false);
-      } else {
-        showToast(`Service with ID ${serviceId} not found.`, 'error');
-        onNavigate('developer-dashboard');
-      }
-    } else {
-      setIsNewService(true);
-      setFormData(initialFormData);
-    }
-  }, [serviceId, onNavigate, showToast, initialFormData]);
-
-  // Track unsaved changes
-  useEffect(() => {
-    // A simple deep comparison could be implemented here for more accuracy
-    const isDirty = JSON.stringify(formData) !== JSON.stringify(initialFormData) || keyFeatures !== '' || images.length > 0;
-    setHasUnsavedChanges(isDirty);
-  }, [formData, keyFeatures, images, initialFormData]);
-
-  // Warn user before leaving with unsaved changes
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        event.preventDefault();
-        event.returnValue = ''; // Required for Chrome
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [hasUnsavedChanges]);
   
-  const handleNavigate = (page: string, params: any = {}) => {
-      if (hasUnsavedChanges && !window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
-        return;
+  useEffect(() => {
+    const fetchService = async () => {
+      if (serviceId) {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('services')
+          .select('*')
+          .eq('id', serviceId)
+          .single();
+
+        if (error) {
+          showToast(`Error fetching service, showing demo data.`, 'error');
+          console.warn(`Error fetching service ${serviceId}, falling back to mock data:`, error.message);
+          const mockService = mockServices.find(s => s.id === serviceId);
+          if (mockService) {
+              setFormData(mockService);
+              if(mockService.imageUrl) setImages([mockService.imageUrl]);
+          } else {
+              showToast(`Could not find demo service with ID ${serviceId}.`, 'error');
+              onNavigate('developer-dashboard');
+          }
+        } else if (data) {
+          setFormData(data as Service);
+          if(data.imageUrl) setImages([data.imageUrl]);
+        }
+        setIsLoading(false);
+      } else {
+        setFormData(initialFormData);
       }
-      onNavigate(page, params);
-  };
+    };
+    fetchService();
+  }, [serviceId, onNavigate, showToast, initialFormData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: name === 'price' ? parseFloat(value) : value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.user?.id) {
+        showToast('You must be logged in.', 'error');
+        return;
+    }
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
-      setHasUnsavedChanges(false); // Reset unsaved changes flag
-      const action = isNewService ? 'created' : 'updated';
-      showToast(`Service "${formData.title}" ${action} successfully! (Demo)`, 'success');
-      console.log('Saving service:', { ...formData, keyFeatures, images });
-      onNavigate('developer-dashboard');
-    }, 1000);
+    
+    // In a real app, handle image uploads to Supabase Storage first.
+    // For now, we'll just save the form data.
+
+    const serviceDataToSave = {
+        ...formData,
+        developer: session.user.user_metadata?.full_name,
+        developer_id: session.user.id,
+    };
+
+    const { error } = await supabase.from('services').upsert(serviceDataToSave);
+
+    setIsSaving(false);
+
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        const action = isNewService ? 'created' : 'updated';
+        showToast(`Service "${formData.title}" ${action} successfully!`, 'success');
+        onNavigate('developer-dashboard');
+    }
   };
   
   const handleImageUpload = useCallback((files: FileList | null) => {
     if (files) {
-      const newImages = Array.from(files).slice(0, 4 - images.length); // Limit to 4 images total
+      const newImages = Array.from(files).slice(0, 4 - images.length);
       const imagePreviews = newImages.map(file => URL.createObjectURL(file));
       setImages(prev => [...prev, ...imagePreviews]);
+      // Note: Real implementation would upload to Supabase Storage here.
     }
   }, [images.length]);
 
@@ -106,11 +115,19 @@ const ServiceManagementPage: React.FC<ServiceManagementPageProps> = ({ onNavigat
 
   const categories = ['Web Application', 'Mobile App', 'Desktop Software', 'Agentic AI'];
 
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+    );
+  }
+
   return (
     <div className="bg-white py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
         <div className="flex items-center mb-8">
-          <button onClick={() => handleNavigate('developer-dashboard')} className="text-primary hover:text-blue-700 mr-4">
+          <button onClick={() => onNavigate('developer-dashboard')} className="text-primary hover:text-blue-700 mr-4">
             &larr; Back to Dashboard
           </button>
           <h1 className="text-3xl font-bold text-gray-900">

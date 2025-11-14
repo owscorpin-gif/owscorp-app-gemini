@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import type { ToastType } from '../types';
+import type { ToastType, Profile } from '../types';
+import { supabase } from '../supabaseClient';
 
 interface DeveloperSettingsPageProps {
   onNavigate: (page: string, params?: any) => void;
@@ -9,38 +10,82 @@ interface DeveloperSettingsPageProps {
 }
 
 const DeveloperSettingsPage: React.FC<DeveloperSettingsPageProps> = ({ onNavigate, session, showToast }) => {
-  const [formData, setFormData] = useState({
-    fullName: session?.user?.user_metadata?.full_name || '',
-    companyName: '',
-    email: session?.user?.email || '',
-    mobileNo: '',
+  const [formData, setFormData] = useState<Profile>({
+    id: session?.user?.id || '',
+    full_name: session?.user?.user_metadata?.full_name || '',
+    company_name: '',
+    mobile_no: '',
     address: '',
-    panNo: '',
-    aadharNo: '',
+    pan_no: '',
+    aadhar_no: '',
     qualification: '',
     description: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!session?.user?.id) {
+          setIsLoading(false);
+          return;
+      };
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // Ignore "No rows found" error
+        showToast(error.message, 'error');
+      } else if (data) {
+        setFormData({
+            id: data.id,
+            full_name: data.full_name || formData.full_name,
+            company_name: data.company_name || '',
+            mobile_no: data.mobile_no || '',
+            address: data.address || '',
+            pan_no: data.pan_no || '',
+            aadhar_no: data.aadhar_no || '',
+            qualification: data.qualification || '',
+            description: data.description || '',
+        });
+      }
+      setIsLoading(false);
+    };
+    fetchProfile();
+  }, [session, showToast, formData.full_name]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!session?.user?.id) {
+        showToast('You must be logged in to update your profile.', 'error');
+        return;
+    }
     setIsSaving(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false);
-      showToast('Profile updated successfully! (Demo)', 'success');
-      console.log('Saving developer profile:', formData);
-      // In a real app, you would save this data to your database
-      // await supabase.from('profiles').update({ ... }).eq('id', session.user.id)
-    }, 1000);
+    
+    const { error } = await supabase.from('profiles').upsert({
+        ...formData,
+        id: session.user.id,
+        updated_at: new Date().toISOString(),
+    });
+
+    setIsSaving(false);
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast('Profile updated successfully!', 'success');
+        onNavigate('developer-dashboard');
+    }
   };
   
-  const FormField: React.FC<{ label: string; name: string; value: string; placeholder?: string; type?: string; required?: boolean }> = 
+  const FormField: React.FC<{ label: string; name: keyof Profile; value: string | undefined; placeholder?: string; type?: string; required?: boolean }> = 
   ({ label, name, value, placeholder, type = 'text', required = false }) => (
     <div>
         <label htmlFor={name} className="block text-sm font-bold text-gray-700 mb-2">
@@ -50,7 +95,7 @@ const DeveloperSettingsPage: React.FC<DeveloperSettingsPageProps> = ({ onNavigat
             type={type}
             id={name}
             name={name}
-            value={value}
+            value={value || ''}
             onChange={handleInputChange}
             required={required}
             className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -58,6 +103,14 @@ const DeveloperSettingsPage: React.FC<DeveloperSettingsPageProps> = ({ onNavigat
         />
     </div>
   );
+
+  if (isLoading) {
+    return (
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+        </div>
+      );
+  }
 
   return (
     <div className="bg-white py-12">
@@ -71,13 +124,12 @@ const DeveloperSettingsPage: React.FC<DeveloperSettingsPageProps> = ({ onNavigat
         
         <form onSubmit={handleSubmit} className="bg-secondary p-8 rounded-lg shadow-md space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="Full Name" name="fullName" value={formData.fullName} required />
-            <FormField label="Company Name (Optional)" name="companyName" value={formData.companyName} />
-            <FormField label="Contact Email" name="email" value={formData.email} type="email" required />
-            <FormField label="Mobile Number" name="mobileNo" value={formData.mobileNo} />
+            <FormField label="Full Name" name="full_name" value={formData.full_name} required />
+            <FormField label="Company Name (Optional)" name="company_name" value={formData.company_name} />
+            <FormField label="Mobile Number" name="mobile_no" value={formData.mobile_no} />
             <FormField label="Address (as per Aadhar)" name="address" value={formData.address} />
-            <FormField label="PAN Number" name="panNo" value={formData.panNo} />
-            <FormField label="Aadhar Number" name="aadharNo" value={formData.aadharNo} />
+            <FormField label="PAN Number" name="pan_no" value={formData.pan_no} />
+            <FormField label="Aadhar Number" name="aadhar_no" value={formData.aadhar_no} />
             <FormField label="Highest Qualification" name="qualification" value={formData.qualification} />
           </div>
           
@@ -89,7 +141,7 @@ const DeveloperSettingsPage: React.FC<DeveloperSettingsPageProps> = ({ onNavigat
                 id="description"
                 name="description"
                 rows={5}
-                value={formData.description}
+                value={formData.description || ''}
                 onChange={handleInputChange}
                 className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Tell clients about your expertise, experience, and the types of solutions you specialize in."
