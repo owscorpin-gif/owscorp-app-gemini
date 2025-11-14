@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Session } from '@supabase/supabase-js';
+import { ToastType } from '../types';
 
 interface MobileSidebarProps {
   isOpen: boolean;
@@ -8,9 +9,10 @@ interface MobileSidebarProps {
   session: Session | null;
   cartItemCount: number;
   onLogout: () => void;
+  showToast: (message: string, type?: ToastType) => void;
 }
 
-const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNavigate, session, cartItemCount, onLogout }) => {
+const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNavigate, session, cartItemCount, onLogout, showToast }) => {
   const isDeveloper = session?.user?.user_metadata?.user_type === 'developer';
   
   const handleNavigation = (page: string, params = {}) => {
@@ -30,7 +32,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNaviga
     if (isDeveloper) {
       handleNavigation('developer-settings');
     } else {
-      alert("Customer settings coming soon!");
+      showToast('Customer settings coming soon!', 'success');
     }
   };
 
@@ -106,11 +108,11 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({ isOpen, onClose, onNaviga
             {session ? (
               <div className="space-y-3">
                  <p className="px-3 text-sm text-gray-600">Signed in as {welcomeName}</p>
-                 <button onClick={handleLogout} className="w-full text-center bg-gray-100 text-gray-800 px-4 py-3 rounded-md hover:bg-gray-200 font-medium">Logout</button>
+                 <button onClick={handleLogout} className="w-full text-center bg-gray-200 text-gray-800 px-4 py-3 rounded-md hover:bg-gray-300 font-medium">Logout</button>
               </div>
             ) : (
               <div className="space-y-3">
-                <button onClick={() => handleNavigation('auth', { initialForm: 'login' })} className="w-full text-center bg-gray-100 text-gray-800 px-4 py-3 rounded-md hover:bg-gray-200 font-medium">Login</button>
+                <button onClick={() => handleNavigation('auth', { initialForm: 'login' })} className="w-full text-center bg-primary text-white px-4 py-3 rounded-md hover:bg-blue-900 font-medium">Login</button>
                 <button onClick={() => handleNavigation('auth', { initialForm: 'signup' })} className="w-full text-center bg-accent text-white px-4 py-3 rounded-md hover:bg-emerald-600 font-medium">Sign Up</button>
               </div>
             )}

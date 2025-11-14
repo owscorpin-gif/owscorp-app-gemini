@@ -54,7 +54,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', 
                     app_metadata: { provider: 'email' },
                     user_metadata: {
                         full_name: fullName,
-                        user_type: formType === 'signup' ? userType : (email.startsWith('dev') ? 'developer' : 'customer'),
+                        user_type: formType === 'signup' ? userType : (email.includes('dev') ? 'developer' : 'customer'),
                     },
                     aud: 'authenticated',
                     email: email,

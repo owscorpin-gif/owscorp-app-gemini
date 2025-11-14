@@ -3,15 +3,17 @@
 import React, { useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import MobileSidebar from './MobileSidebar';
+import { ToastType } from '../types';
 
 interface HeaderProps {
   cartItemCount: number;
   onNavigate: (page: string, params?: any) => void;
   session: Session | null;
   onLogout: () => void;
+  showToast: (message: string, type?: ToastType) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session, onLogout }) => {
+const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session, onLogout, showToast }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isDeveloper = session?.user?.user_metadata?.user_type === 'developer';
 
@@ -61,19 +63,20 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session, onL
                {session ? (
                 <>
                   <span className="text-gray-600 hidden lg:inline">Welcome, {welcomeName}</span>
-                   {isDeveloper && (
-                      <button onClick={() => onNavigate('developer-dashboard')} className="text-gray-600 hover:text-primary font-medium">
-                          Dashboard
-                      </button>
-                  )}
-                  <button onClick={handleLogout} className="bg-primary text-white px-4 py-2 rounded-md hover:bg-blue-900 transition duration-150 ease-in-out font-medium">
+                   <button 
+                      onClick={() => onNavigate(isDeveloper ? 'developer-dashboard' : 'customer-dashboard')} 
+                      className="text-gray-600 hover:text-primary font-medium"
+                    >
+                        Dashboard
+                    </button>
+                  <button onClick={handleLogout} className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition duration-150 ease-in-out font-medium">
                     Logout
                   </button>
                 </>
               ) : (
                 <>
-                  <button onClick={() => onNavigate('auth', { initialForm: 'login' })} className="text-gray-600 hover:text-primary font-medium">Login</button>
-                  <button onClick={() => onNavigate('auth', { initialForm: 'signup' })} className="bg-accent text-white px-4 py-2 rounded-md hover:bg-emerald-600 transition duration-150 ease-in-out font-medium">
+                  <button onClick={() => onNavigate('auth', { initialForm: 'login' })} className="bg-primary/90 text-white px-4 py-2 rounded-md hover:bg-primary transition duration-150 ease-in-out font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary">Login</button>
+                  <button onClick={() => onNavigate('auth', { initialForm: 'signup' })} className="bg-accent text-white px-4 py-2 rounded-md hover:bg-emerald-600 transition duration-150 ease-in-out font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent">
                     Sign Up
                   </button>
                 </>
@@ -110,6 +113,7 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session, onL
         session={session}
         cartItemCount={cartItemCount}
         onLogout={onLogout}
+        showToast={showToast}
       />
     </>
   );

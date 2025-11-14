@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 
 interface HeroSectionProps {
@@ -27,10 +28,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onNavigate }) => {
               OWSCORP connects you with top-tier developers and cutting-edge digital products. Find, buy, and deploy agentic AI, automation tools, and applications with confidence.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <button onClick={() => onNavigate('categories-list')} className="inline-block bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-900 transition-transform transform hover:scale-105 shadow-lg">
+              <button onClick={() => onNavigate('categories-list')} className="inline-block bg-primary text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-900 transition-transform transform hover:scale-105 shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary">
                 Explore Services
               </button>
-              <button onClick={() => onNavigate('auth', { initialForm: 'signup' })} className="inline-block bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105 shadow-lg">
+              <button onClick={() => onNavigate('auth', { initialForm: 'signup' })} className="inline-block bg-gray-200 text-gray-800 font-bold py-3 px-8 rounded-lg hover:bg-gray-300 transition-transform transform hover:scale-105 shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-gray-400">
                 Become a Seller
               </button>
             </div>

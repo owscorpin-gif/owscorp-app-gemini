@@ -7,6 +7,7 @@ import { salesData } from '../data/salesData';
 import CategoryRevenueChart from '../components/CategoryRevenueChart';
 import { categorySalesData } from '../data/categorySalesData';
 import ConfirmationModal from '../components/ConfirmationModal';
+import AddServiceModal from '../components/AddServiceModal';
 
 // --- SVG Icons ---
 const DollarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8v1m0 6v1m6-4a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
@@ -39,6 +40,7 @@ const AnalyticsCard: React.FC<{ title: string, value: string, icon: React.ReactN
 const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavigate, session, showToast }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Assuming the developer is 'AI Genix' for this demo
   const developerId = 'ai-genix';
@@ -53,12 +55,16 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
   
   const handleConfirmDelete = () => {
     if (!serviceToDelete) return;
-
     showToast(`"${serviceToDelete.title}" has been deleted. (Demo)`, 'success');
-    // In a real app, you would call an API to delete the service here.
-    
     setIsDeleteModalOpen(false);
     setServiceToDelete(null);
+  };
+  
+  const handleAddService = (newService: Partial<Service>) => {
+    console.log("Adding new service:", newService);
+    // In a real app, you would add the service to your state/backend here.
+    showToast(`Service "${newService.title}" created successfully!`, 'success');
+    setIsAddModalOpen(false);
   };
   
   const welcomeName = session?.user?.user_metadata?.full_name || session?.user?.email || 'Developer';
@@ -76,7 +82,7 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
              <button onClick={() => onNavigate('developer-settings')} className="bg-white text-gray-700 font-medium py-2 px-4 rounded-lg shadow-sm hover:bg-gray-100 border">
                 Edit Profile
               </button>
-             <button onClick={() => onNavigate('service-management', { serviceId: null })} className="bg-accent text-white font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-emerald-600">
+             <button onClick={() => setIsAddModalOpen(true)} className="bg-accent text-white font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-emerald-600">
                 + List New Service
               </button>
           </div>
@@ -158,6 +164,11 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
         onConfirm={handleConfirmDelete}
         title="Delete Service"
         message={`Are you sure you want to delete "${serviceToDelete?.title}"? This action cannot be undone.`}
+      />
+       <AddServiceModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAddService={handleAddService}
       />
     </div>
   );

@@ -224,7 +224,9 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
                        {isEditingBio ? (
                         <button onClick={handleSaveBioClick} className="bg-accent text-white font-bold py-2 px-4 rounded-lg hover:bg-emerald-600 text-sm">Save Bio</button>
                        ) : (
-                        <button onClick={handleEditBioClick} className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 text-sm">Edit Bio</button>
+                        session?.user?.user_metadata?.user_type === 'developer' && (
+                          <button onClick={handleEditBioClick} className="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 text-sm">Edit Bio</button>
+                        )
                        )}
                     </div>
                   </div>

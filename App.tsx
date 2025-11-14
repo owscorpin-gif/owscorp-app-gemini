@@ -190,15 +190,15 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-secondary">
-      {showHeaderFooter && <Header cartItemCount={cartItemCount} onNavigate={handleNavigate} session={session} onLogout={handleLogout} />}
+      {showHeaderFooter && <Header cartItemCount={cartItemCount} onNavigate={handleNavigate} session={session} onLogout={handleLogout} showToast={showToast} />}
       <main className="flex-grow pb-16 md:pb-0">
         <ErrorBoundary>
           {renderPage()}
         </ErrorBoundary>
       </main>
-      {showHeaderFooter && <Footer onNavigate={handleNavigate} />}
-      {showHeaderFooter && <ChatbotWidget />}
-      {showHeaderFooter && <BottomNavBar onNavigate={handleNavigate} session={session} currentPage={currentView.page} />}
+      {showHeaderFooter && <Footer onNavigate={handleNavigate} showToast={showToast} />}
+      {showHeaderFooter && <ChatbotWidget showToast={showToast} />}
+      {showHeaderFooter && <BottomNavBar onNavigate={handleNavigate} session={session} currentPage={currentView.page} showToast={showToast} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );
