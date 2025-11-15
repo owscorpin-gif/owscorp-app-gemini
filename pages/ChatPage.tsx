@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenAI, Chat } from "@google/genai";
+import React, { useState, useRef, useEffect } from 'react';
 import type { ChatMessage } from '../types';
 
 interface ChatPageProps {
@@ -27,7 +26,6 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
   const [userInput, setUserInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const chatRef = useRef<Chat | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -35,61 +33,80 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
   };
 
   useEffect(scrollToBottom, [messages]);
-
-  const initializeChat = useCallback(async () => {
-    try {
-      if (!process.env.API_KEY) {
-        setError("API_KEY is not configured. Please see the developer console for instructions.");
-        console.error("Gemini API key is missing. Please set it in your environment variables.");
-        return;
-      }
-      
-      // FIX: The GoogleGenAI constructor requires an object with the apiKey property.
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      chatRef.current = ai.chats.create({ 
-        model: "gemini-2.5-flash",
-        config: {
-          systemInstruction: "You are an expert consultant for a digital marketplace called OWSCORP. Your role is to be a friendly and helpful AI assistant. You will answer questions about services, pricing, and general inquiries related to the platform. Be concise and professional.",
-          maxOutputTokens: 500,
-        }
-      });
-
-      // Send initial greeting from the model
-      setMessages([{ role: 'model', parts: [{ text: "Hello! I am the OWSCORP AI consultant. How can I help you find the perfect digital solution today?" }] }]);
-
-    } catch (e: any) {
-      setError("Failed to initialize the AI model. " + e.message);
-      console.error(e);
-    }
-  }, []);
-
+  
+  // Set initial greeting from the model
   useEffect(() => {
-    initializeChat();
-  }, [initializeChat]);
+    setMessages([{ role: 'model', parts: [{ text: "Hello! I am the OWSCORP AI consultant. How can I help you find the perfect digital solution today?" }] }]);
+  }, []);
 
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInput.trim() || isLoading || !chatRef.current) return;
-    
+    if (!userInput.trim() || isLoading) return;
+
+    const API_KEY = process.env.API_KEY;
+    if (!API_KEY) {
+        setError("API_KEY is not configured. The AI assistant is currently unavailable.");
+        console.error("Gemini API key is missing. Please set it in your environment variables.");
+        return;
+    }
+
     const userMessage: ChatMessage = { role: 'user', parts: [{ text: userInput }] };
-    setMessages(prev => [...prev, userMessage]);
-    const messageToSend = userInput;
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setUserInput('');
     setIsLoading(true);
+    setError(null);
+
+    const systemInstruction = {
+        parts: { text: "You are an expert consultant for a digital marketplace called OWSCORP. Your role is to be a friendly and helpful AI assistant. You will answer questions about services, pricing, and general inquiries related to the platform. Be concise and professional." }
+    };
+
+    // The Gemini API requires a history without adjacent messages from the same role.
+    // We send the existing messages (after the initial greeting) plus the new user message.
+    const contents = updatedMessages.slice(1);
 
     try {
-      const response = await chatRef.current.sendMessage({ message: messageToSend });
-      const modelResponseText = response.text;
-      const modelMessage: ChatMessage = { role: 'model', parts: [{ text: modelResponseText }] };
-      setMessages(prev => [...prev, modelMessage]);
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: contents,
+                systemInstruction: systemInstruction,
+                generationConfig: {
+                    maxOutputTokens: 500,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        const modelResponseText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (modelResponseText) {
+            const modelMessage: ChatMessage = { role: 'model', parts: [{ text: modelResponseText }] };
+            setMessages(prev => [...prev, modelMessage]);
+        } else {
+             throw new Error("Received an empty or invalid response from the AI.");
+        }
+
     } catch (e: any) {
-      setError("Sorry, I encountered an error. Please try again. " + e.message);
-      console.error(e);
+        setError("Sorry, I encountered an error. Please try again. " + e.message);
+        console.error(e);
+        // On failure, revert to the state before the user's message was sent.
+        setMessages(messages);
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
+
 
   return (
     <div className="flex flex-col h-screen bg-secondary">

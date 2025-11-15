@@ -41,10 +41,10 @@ const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({ onNavigat
         // Fix: Deduplicate items. If a user buys the same service twice, it should only appear once.
         const uniqueItemsMap = new Map<string, Service>();
         data.forEach(order => {
-          // FIX: Supabase returns a joined table as an array by default. Accessing the first element.
-          // The join might return a null or empty array if service was deleted, so we check for that.
-          if (order.services && Array.isArray(order.services) && order.services.length > 0) {
-            const service: Service = order.services[0];
+          // FIX: A Supabase join on a foreign key returns an object, not an array.
+          // This logic now correctly handles the nested service object.
+          if (order.services && typeof order.services === 'object' && !Array.isArray(order.services)) {
+            const service = order.services as Service;
             if (service && !uniqueItemsMap.has(service.id)) {
                 uniqueItemsMap.set(service.id, service);
             }
