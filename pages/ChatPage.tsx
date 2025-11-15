@@ -59,7 +59,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
     setError(null);
 
     const systemInstruction = {
-        parts: { text: "You are an expert consultant for a digital marketplace called OWSCORP. Your role is to be a friendly and helpful AI assistant. You will answer questions about services, pricing, and general inquiries related to the platform. Be concise and professional." }
+        parts: [{ text: "You are an expert consultant for a digital marketplace called OWSCORP. Your role is to be a friendly and helpful AI assistant. You will answer questions about services, pricing, and general inquiries related to the platform. Be concise and professional." }]
     };
 
     // The Gemini API requires a history without adjacent messages from the same role.

@@ -52,12 +52,13 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', 
                     full_name: fullName,
                     user_type: userType,
                 },
+                emailRedirectTo: window.location.origin,
             },
         });
         if (error) {
             showToast(error.message, 'error');
         } else {
-            showToast('Check your email for a confirmation link!', 'success');
+            showToast('Success! Please check your inbox (and spam folder) for a verification email to complete your registration.', 'success');
         }
     } else if (formType === 'reset') {
         // FIX: Updated to Supabase v2 syntax: resetPasswordForEmail is no longer on the `api` object.

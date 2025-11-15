@@ -21,13 +21,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onOpenModal, onAddTo
             onAddToCart(service);
         }
     };
-
-    const handleNavigateToDeveloper = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (onNavigate) {
-            onNavigate('developer', { developerId: service.developer_id, developerName: service.developer });
-        }
-    };
     
     return (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 group flex flex-col">
@@ -44,7 +37,10 @@ const ServiceCard: React.FC<ServiceCardProps> = ({ service, onOpenModal, onAddTo
                 <p className="text-sm text-gray-500 mb-4 flex items-center">
                   by&nbsp;
                   <button
-                    onClick={onNavigate ? handleNavigateToDeveloper : undefined}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigate?.('developer', { developerId: service.developer_id, developerName: service.developer });
+                    }}
                     disabled={!onNavigate}
                     className="font-medium text-primary hover:underline focus:outline-none disabled:no-underline disabled:text-gray-500 disabled:cursor-default"
                   >
