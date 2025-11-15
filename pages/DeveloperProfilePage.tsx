@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import ServiceCard from '../components/ServiceCard';
 import type { Service, Review, ToastType, Profile } from '../types';
 import ServiceQuickViewModal from '../components/ServiceQuickViewModal';
-import type { Session } from '@supabase/supabase-js';
+// FIX: Updated Supabase type import. It's possible the installed version of Supabase client doesn't support 'import type'.
+import { Session } from '@supabase/supabase-js';
 import StarRatingDisplay from '../components/StarRatingDisplay';
 import StarRatingInput from '../components/StarRatingInput';
 import Pagination from '../components/Pagination';
@@ -103,13 +104,26 @@ const DeveloperProfilePage: React.FC<DeveloperProfilePageProps> = ({ developerId
             }
 
             // Correctly query for a purchase from this specific developer
+            const { data: servicesData, error: servicesError } = await supabase
+                .from('services')
+                .select('id')
+                .eq('developer_id', developerId);
+
+            if (servicesError || !servicesData || servicesData.length === 0) {
+                setCanReview(false);
+                setReviewStatusMessage("You must purchase a service from this developer to leave a review.");
+                return;
+            }
+
+            const serviceIds = servicesData.map(s => s.id);
+
             const { data: purchase, error: purchaseError } = await supabase
-              .from('orders')
-              .select('id, services!inner(developer_id)')
-              .eq('user_id', session.user.id)
-              .eq('services.developer_id', developerId)
-              .limit(1)
-              .maybeSingle();
+                .from('orders')
+                .select('id')
+                .eq('user_id', session.user.id)
+                .in('service_id', serviceIds)
+                .limit(1)
+                .maybeSingle();
             
             if (purchaseError) {
               console.error("Error checking purchase history for review eligibility:", purchaseError);

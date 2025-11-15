@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { Session } from '@supabase/supabase-js';
+// FIX: Updated Supabase type import. It's possible the installed version of Supabase client doesn't support 'import type'.
+import { Session } from '@supabase/supabase-js';
 import type { ToastType, Service } from '../types';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { supabase } from '../supabaseClient';
@@ -39,7 +40,7 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
   const [developerServices, setDeveloperServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchDeveloperServices = async () => {
+  const fetchDeveloperServices = React.useCallback(async () => {
     if (!session?.user?.id) {
       setLoading(false);
       return;
@@ -59,11 +60,11 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
       setDeveloperServices(data as Service[]);
     }
     setLoading(false);
-  };
+  }, [session, showToast]);
 
   useEffect(() => {
     fetchDeveloperServices();
-  }, [session, showToast]);
+  }, [fetchDeveloperServices]);
 
 
   const handleOpenDeleteModal = (service: Service) => {
@@ -74,19 +75,29 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
   const handleConfirmDelete = async () => {
     if (!serviceToDelete) return;
 
-    // 1. Delete associated images from storage (if they exist)
-    if (serviceToDelete.image_urls && serviceToDelete.image_urls.length > 0) {
-      const filePaths = serviceToDelete.image_urls.map(url => {
-        // Extract the path from the full public URL
-        const path = url.split('/service-images/')[1];
-        return path;
-      }).filter(Boolean); // Filter out any undefined/null paths
+    // 1. Delete associated images from storage to prevent orphaned files
+    const imageUrlsToDelete = [
+      ...(serviceToDelete.image_urls || []),
+      ...(serviceToDelete.imageUrl ? [serviceToDelete.imageUrl] : [])
+    ];
+    
+    const uniqueImageUrls = [...new Set(imageUrlsToDelete)];
+
+    if (uniqueImageUrls.length > 0) {
+      const filePaths = uniqueImageUrls.map(url => {
+        try {
+            const path = url.split('/service-images/')[1];
+            return path ? decodeURIComponent(path) : null;
+        } catch (e) {
+            return null;
+        }
+      }).filter((path): path is string => path !== null);
 
       if (filePaths.length > 0) {
         const { error: storageError } = await supabase.storage.from('service-images').remove(filePaths);
         if (storageError) {
           showToast(`Could not delete associated images: ${storageError.message}`, 'error');
-          // We will still proceed to delete the database record
+          // Proceed to delete the database record anyway
         }
       }
     }

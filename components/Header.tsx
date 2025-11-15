@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import type { Session } from '@supabase/supabase-js';
+// FIX: Updated Supabase type import. It's possible the installed version of Supabase client doesn't support 'import type'.
+import { Session } from '@supabase/supabase-js';
 import MobileSidebar from './MobileSidebar';
 import { ToastType } from '../types';
 

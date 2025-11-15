@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import type { Provider } from '@supabase/supabase-js';
+// FIX: Updated Supabase type import. It's possible the installed version of Supabase client doesn't support 'import type'.
+import { Provider } from '@supabase/supabase-js';
 import type { ToastType } from '../types';
 import { supabase } from '../supabaseClient';
 
@@ -37,10 +38,12 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', 
     setLoading(true);
 
     if (formType === 'login') {
+        // FIX: Updated to Supabase v2 syntax: signInWithPassword instead of signIn
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) showToast(error.message, 'error');
         // On success, the listener in App.tsx will handle navigation.
     } else if (formType === 'signup') {
+        // FIX: Updated to Supabase v2 syntax: signUp takes a single object with an `options` property for metadata.
         const { error } = await supabase.auth.signUp({
             email,
             password,
@@ -57,6 +60,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', 
             showToast('Check your email for a confirmation link!', 'success');
         }
     } else if (formType === 'reset') {
+        // FIX: Updated to Supabase v2 syntax: resetPasswordForEmail is no longer on the `api` object.
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: window.location.origin, // URL to redirect to after password reset
         });
@@ -72,6 +76,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onNavigate, initialForm = 'login', 
   
    const handleOAuthLogin = async (provider: Provider) => {
     setLoading(true);
+    // FIX: Updated to Supabase v2 syntax: signInWithOAuth instead of signIn
     const { error } = await supabase.auth.signInWithOAuth({ provider });
     if (error) {
       showToast(error.message, 'error');

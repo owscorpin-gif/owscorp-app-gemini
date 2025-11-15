@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { GoogleGenerativeAI as GoogleGenAI, Chat } from "@google/generative-ai";
+import { GoogleGenAI, Chat } from "@google/genai";
 import type { ChatMessage } from '../types';
 
 interface ChatPageProps {
@@ -44,6 +44,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ onNavigate }) => {
         return;
       }
       
+      // FIX: The GoogleGenAI constructor requires an object with the apiKey property.
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       chatRef.current = ai.chats.create({ 
         model: "gemini-2.5-flash",

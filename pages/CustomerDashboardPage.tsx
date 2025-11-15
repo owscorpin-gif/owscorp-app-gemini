@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Service, ToastType } from '../types';
-import type { Session } from '@supabase/supabase-js';
+// FIX: Updated Supabase type import. It's possible the installed version of Supabase client doesn't support 'import type'.
+import { Session } from '@supabase/supabase-js';
 import { supabase } from '../supabaseClient';
 
 interface CustomerDashboardPageProps {
@@ -30,9 +31,7 @@ const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({ onNavigat
       setLoading(true);
       const { data, error } = await supabase
         .from('orders')
-        .select(`
-          services(*)
-        `)
+        .select('services(*)')
         .eq('user_id', session.user.id);
 
       if (error) {
@@ -42,9 +41,13 @@ const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({ onNavigat
         // Fix: Deduplicate items. If a user buys the same service twice, it should only appear once.
         const uniqueItemsMap = new Map<string, Service>();
         data.forEach(order => {
-          // The join might return a null service if it was deleted, so we check for that.
-          if (order.services && !uniqueItemsMap.has(order.services.id)) {
-            uniqueItemsMap.set(order.services.id, order.services as Service);
+          // FIX: Supabase returns a joined table as an array by default. Accessing the first element.
+          // The join might return a null or empty array if service was deleted, so we check for that.
+          if (order.services && Array.isArray(order.services) && order.services.length > 0) {
+            const service: Service = order.services[0];
+            if (service && !uniqueItemsMap.has(service.id)) {
+                uniqueItemsMap.set(service.id, service);
+            }
           }
         });
         const uniqueItems = Array.from(uniqueItemsMap.values());

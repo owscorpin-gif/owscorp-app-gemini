@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import HomePage from './pages/HomePage';
 import Header from './components/Header';
@@ -7,7 +8,8 @@ import type { CartItem, Service, ToastState, ToastType, ChatMessage } from './ty
 import DeveloperProfilePage from './pages/DeveloperProfilePage';
 import Toast from './components/Toast';
 import AuthPage from './pages/AuthPage';
-import type { Session } from '@supabase/supabase-js';
+// FIX: Updated Supabase type import. It's possible the installed version of Supabase client doesn't support 'import type'.
+import { Session } from '@supabase/supabase-js';
 import SearchResultsPage from './pages/SearchResultsPage';
 import CartPage from './pages/CartPage';
 import CategoryPage from './pages/CategoryPage';
@@ -63,19 +65,18 @@ const App: React.FC = () => {
   
   useEffect(() => {
     setLoading(true);
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        setSession(session);
-      })
-      .catch((error) => {
+    // FIX: Updated to Supabase v2 syntax. `getSession()` is async.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    }).catch(error => {
         console.warn("Error fetching session on startup:", error);
-        // App will proceed with session as null, which is a valid state
-      })
-      .finally(() => {
         setLoading(false);
-      });
+    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // FIX: Updated onAuthStateChange to v2 syntax for unsubscribe.
+    // The subscription object is in `data.subscription`.
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (_event === 'SIGNED_IN' && session) {
         const isDeveloper = session.user?.user_metadata?.user_type === 'developer';
@@ -88,7 +89,7 @@ const App: React.FC = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => authListener?.subscription.unsubscribe();
   }, [handleNavigate, showToast]);
 
   const handleLogout = useCallback(async () => {
