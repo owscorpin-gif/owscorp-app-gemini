@@ -3,7 +3,7 @@ import HomePage from './pages/HomePage';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ChatbotWidget from './components/ChatbotWidget';
-import type { CartItem, Service, ToastState, ToastType } from './types';
+import type { CartItem, Service, ToastState, ToastType, ChatMessage } from './types';
 import DeveloperProfilePage from './pages/DeveloperProfilePage';
 import Toast from './components/Toast';
 import AuthPage from './pages/AuthPage';
@@ -21,6 +21,8 @@ import DeveloperSettingsPage from './pages/DeveloperSettingsPage';
 import ServiceManagementPage from './pages/ServiceManagementPage';
 import CustomerDashboardPage from './pages/CustomerDashboardPage';
 import { supabase } from './supabaseClient';
+import ChatPage from './pages/ChatPage';
+import DevelopersListPage from './pages/DevelopersListPage';
 
 const App: React.FC = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -181,8 +183,7 @@ const App: React.FC = () => {
     switch (currentView.page) {
       case 'developer':
         return <DeveloperProfilePage 
-                  developerId={currentView.params.developer_id} 
-                  developerName={currentView.params.developerName} 
+                  developerId={currentView.params.developerId} 
                   onNavigate={handleNavigate} 
                   onAddToCart={handleAddToCart}
                   session={session}
@@ -216,7 +217,7 @@ const App: React.FC = () => {
         return <CategoriesListPage onNavigate={handleNavigate} />;
       case 'contact':
         return <ContactPage
-                  developerId={currentView.params.developer_id}
+                  developerId={currentView.params.developerId}
                   developerName={currentView.params.developerName}
                   onNavigate={handleNavigate}
                   session={session}
@@ -241,6 +242,10 @@ const App: React.FC = () => {
                   showToast={showToast}
                   serviceId={currentView.params.serviceId} 
                 />;
+      case 'chat':
+        return <ChatPage onNavigate={handleNavigate} />;
+      case 'developers-list':
+        return <DevelopersListPage onNavigate={handleNavigate} />;
       case 'home':
       default:
         return <HomePage onAddToCart={handleAddToCart} onNavigate={handleNavigate} showToast={showToast} />;
@@ -258,8 +263,8 @@ const App: React.FC = () => {
         </ErrorBoundary>
       </main>
       {showHeaderFooter && <Footer onNavigate={handleNavigate} showToast={showToast} />}
-      {showHeaderFooter && <ChatbotWidget showToast={showToast} />}
-      {showHeaderFooter && <BottomNavBar onNavigate={handleNavigate} session={session} currentPage={currentView.page} showToast={showToast} />}
+      {showHeaderFooter && <ChatbotWidget onNavigate={handleNavigate} />}
+      {showHeaderFooter && <BottomNavBar onNavigate={handleNavigate} session={session} currentPage={currentView.page} />}
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>
   );

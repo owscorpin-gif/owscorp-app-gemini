@@ -1,6 +1,5 @@
 import React from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { ToastType } from '../types';
 
 const HomeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>;
 const CategoryIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>;
@@ -13,10 +12,9 @@ interface BottomNavBarProps {
   onNavigate: (page: string, params?: any) => void;
   session: Session | null;
   currentPage: string;
-  showToast: (message: string, type?: ToastType) => void;
 }
 
-const BottomNavBar: React.FC<BottomNavBarProps> = ({ onNavigate, session, currentPage, showToast }) => {
+const BottomNavBar: React.FC<BottomNavBarProps> = ({ onNavigate, session, currentPage }) => {
   const navItems = [
     { page: 'home', label: 'Home', icon: HomeIcon },
     { page: 'categories', label: 'Categories', icon: CategoryIcon },
@@ -29,11 +27,7 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ onNavigate, session, curren
     if (page === 'profile') {
       if (session) {
         const isDeveloper = session.user?.user_metadata?.user_type === 'developer';
-        if (isDeveloper) {
-          onNavigate('developer-dashboard');
-        } else {
-          onNavigate('customer-dashboard');
-        }
+        onNavigate(isDeveloper ? 'developer-dashboard' : 'customer-dashboard');
       } else {
         onNavigate('auth', { initialForm: 'login' });
       }
@@ -43,15 +37,11 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ onNavigate, session, curren
       } else {
         onNavigate('categories-list');
       }
-    } else if (page === 'chat') {
-        // Placeholder for chat functionality
-        showToast('AI Chatbot feature is coming soon!', 'success');
     } else {
       onNavigate(page);
     }
   };
   
-  // Normalize currentPage for comparison
   const getActivePage = () => {
       const developerPages = ['developer', 'developer-dashboard', 'developer-settings', 'service-management'];
       const profilePages = ['auth', 'customer-dashboard', ...developerPages];

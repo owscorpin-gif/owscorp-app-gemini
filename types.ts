@@ -5,12 +5,15 @@ export interface Service {
   title: string;
   category: string;
   developer: string;
-  developer_id: string; // Standardized to snake_case for DB consistency
-  developerVerified: boolean;
+  developer_id: string; 
+  // This field is likely denormalized for performance. 
+  // The source of truth is the verification_status on the developer's profile.
+  developerVerified: boolean; 
   rating: number;
   price: number;
   imageUrl: string;
   description: string;
+  image_urls?: string[];
 }
 
 export interface CartItem extends Service {
@@ -53,6 +56,8 @@ export interface Profile {
     aadhar_no?: string;
     qualification?: string;
     description?: string;
+    user_type?: 'customer' | 'developer';
+    verification_status?: 'Pending' | 'Verified' | 'Rejected';
 }
 
 export interface Message {
@@ -63,6 +68,12 @@ export interface Message {
     recipient_developer_id?: string;
     sender_user_id?: string;
 }
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  parts: { text: string }[];
+}
+
 
 export type ToastType = 'success' | 'error';
 

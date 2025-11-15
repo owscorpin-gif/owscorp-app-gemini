@@ -31,7 +31,7 @@ const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({ onNavigat
       const { data, error } = await supabase
         .from('orders')
         .select(`
-          service:services (*)
+          services(*)
         `)
         .eq('user_id', session.user.id);
 
@@ -43,8 +43,8 @@ const CustomerDashboardPage: React.FC<CustomerDashboardPageProps> = ({ onNavigat
         const uniqueItemsMap = new Map<string, Service>();
         data.forEach(order => {
           // The join might return a null service if it was deleted, so we check for that.
-          if (order.service && !uniqueItemsMap.has(order.service.id)) {
-            uniqueItemsMap.set(order.service.id, order.service as Service);
+          if (order.services && !uniqueItemsMap.has(order.services.id)) {
+            uniqueItemsMap.set(order.services.id, order.services as Service);
           }
         });
         const uniqueItems = Array.from(uniqueItemsMap.values());

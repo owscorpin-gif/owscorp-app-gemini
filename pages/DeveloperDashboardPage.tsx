@@ -73,13 +73,34 @@ const DeveloperDashboardPage: React.FC<DeveloperDashboardPageProps> = ({ onNavig
   
   const handleConfirmDelete = async () => {
     if (!serviceToDelete) return;
-    const { error } = await supabase.from('services').delete().eq('id', serviceToDelete.id);
-    if (error) {
-      showToast(error.message, 'error');
+
+    // 1. Delete associated images from storage (if they exist)
+    if (serviceToDelete.image_urls && serviceToDelete.image_urls.length > 0) {
+      const filePaths = serviceToDelete.image_urls.map(url => {
+        // Extract the path from the full public URL
+        const path = url.split('/service-images/')[1];
+        return path;
+      }).filter(Boolean); // Filter out any undefined/null paths
+
+      if (filePaths.length > 0) {
+        const { error: storageError } = await supabase.storage.from('service-images').remove(filePaths);
+        if (storageError) {
+          showToast(`Could not delete associated images: ${storageError.message}`, 'error');
+          // We will still proceed to delete the database record
+        }
+      }
+    }
+
+    // 2. Delete the service record from the database
+    const { error: dbError } = await supabase.from('services').delete().eq('id', serviceToDelete.id);
+    if (dbError) {
+      showToast(dbError.message, 'error');
     } else {
       showToast(`"${serviceToDelete.title}" has been deleted.`, 'success');
       fetchDeveloperServices(); // Refresh the list
     }
+
+    // 3. Clean up state
     setIsDeleteModalOpen(false);
     setServiceToDelete(null);
   };

@@ -41,7 +41,7 @@ const ServiceQuickViewModal: React.FC<ServiceQuickViewModalProps> = ({ service, 
     e.preventDefault();
     e.stopPropagation();
     onClose();
-    onNavigate('developer', { developer_id: service.developer_id, developerName: service.developer });
+    onNavigate('developer', { developerId: service.developer_id, developerName: service.developer });
   };
   
   useEffect(() => {

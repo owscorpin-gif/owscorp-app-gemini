@@ -15,12 +15,9 @@ const Header: React.FC<HeaderProps> = ({ cartItemCount, onNavigate, session, onL
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isDeveloper = session?.user?.user_metadata?.user_type === 'developer';
 
-  // Fix: Explicitly type navLinks to allow for optional 'disabled' and 'page' properties.
   const navLinks: { name: string; page?: string; params?: any; disabled?: boolean }[] = [
     { name: 'Services', page: 'categories-list' },
-    // The "Developers" link is disabled because it currently points to a single, hardcoded developer profile.
-    // A dedicated page for listing all developers should be implemented before enabling this link.
-    { name: 'Developers', disabled: true },
+    { name: 'Developers', page: 'developers-list' },
     { name: 'About', page: 'about' },
     { name: 'Support', page: 'contact' },
   ];

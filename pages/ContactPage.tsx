@@ -47,7 +47,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ developerId, developerName, o
 
   const handleGoBack = () => {
      if (developerId && developerName) {
-      onNavigate('developer', { developer_id: developerId, developerName });
+      onNavigate('developer', { developerId: developerId, developerName });
     } else {
       onNavigate('home');
     }
